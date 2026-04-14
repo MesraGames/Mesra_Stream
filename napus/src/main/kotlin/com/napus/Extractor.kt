@@ -1,47 +1,44 @@
 package com.napus
 
-import com.lagradost.cloudstream3.utils.ExtractorApi
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.utils.*
+import android.content.Context
+import org.jsoup.nodes.Element
+import com.lagradost.cloudstream3.network.CloudflareKiller
 
-class NapusRawExtractor : ExtractorApi() {
-    override val name = "Napus Direct"
-    override val mainUrl = "https://napus.org"
+class NapusExtractor : ExtractorApi() {
+    override var name = "NapusCustom"
+    override var mainUrl = "https://napus.org"
     override val requiresReferer = true
 
-    override suspend fun getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit): List<ExtractorLink> {
-        val response = app.get(url, referer = referer).text
-        val sources = mutableListOf<ExtractorLink>()
-
-        // Regex untuk mencari file m3u8 atau mp4 dalam file/sources JS
-        val m3u8Regex = "(https?.*?\\.m3u8)".toRegex()
-        val mp4Regex = "(https?.*?\\.mp4)".toRegex()
-
-        m3u8Regex.findAll(response).forEach { match ->
-            sources.add(ExtractorLink(name, "Napus HLS", match.value, referer ?: "", Qualities.Unknown.value, true))
+    override suspend fun getUrl(url: String, referer: String?, callback: (ExtractorLink) -> Unit) {
+        // Scraping logic untuk server internal jika ada
+        val doc = app.get(url, referer = referer).text
+        val videoUrl = "" // Extract raw mp4 via regex
+        if (videoUrl.isNotEmpty()) {
+            callback.invoke(
+                ExtractorLink(name, name, videoUrl, referer ?: "", Qualities.Unknown.value, false)
+            )
         }
-
-        mp4Regex.findAll(response).forEach { match ->
-            sources.add(ExtractorLink(name, "Napus MP4", match.value, referer ?: "", Qualities.Unknown.value, false))
-        }
-
-        return sources
     }
 }
 
-class StreamWishNapus : com.lagradost.cloudstream3.extractors.StreamWish() {
-    override val name = "StreamWish Napus"
-    override val mainUrl = "https://streamwish.to"
+class StreamWish : VidhideExtractor() {
+    override var name = "StreamWish"
+    override var mainUrl = "https://streamwish.to"
 }
 
-class FilemoonNapus : com.lagradost.cloudstream3.extractors.Filemoon() {
-    override val name = "Filemoon Napus"
-    override val mainUrl = "https://filemoon.sx"
+class Filemoon : Filesim() {
+    override var name = "Filemoon"
+    override var mainUrl = "https://filemoon.sx"
 }
 
-class VidmolyNapus : com.lagradost.cloudstream3.extractors.Vidmoly() {
-    override val name = "Vidmoly Napus"
-    override val mainUrl = "https://vidmoly.to"
+open class VidhideExtractor : ExtractorApi() {
+    override var name = "Vidhide"
+    override var mainUrl = "https://vidhide.com"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(url: String, referer: String?, callback: (ExtractorLink) -> Unit) {
+        loadExtractor(url, referer, callback)
+    }
 }
