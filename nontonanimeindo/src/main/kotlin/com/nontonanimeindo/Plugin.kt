@@ -1,23 +1,18 @@
-package com.lagradost.cloudstream3.plugins.nontonanimeindo
+package com.nontonanimeindo
 
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
-import com.lagradost.cloudstream3.extractors.*
 
 @CloudstreamPlugin
 class NontonAnimeIndoPlugin : Plugin() {
     override fun load(context: Context) {
         // Registrasi Provider Utama
-        registerMainAPI(NontonAnimeIndoProvider())
+        registerMainAPI(NontonanimeindoProvider())
         
-        // Registrasi Extractor Kustom
+        // Registrasi Custom dan External Extractors
         registerExtractorAPI(NontonAnimeIndoExtractor())
-        
-        // Registrasi Extractor Host Pihak Ketiga (Bawaan)
-        registerExtractorAPI(StreamWishCustom())
-        registerExtractorAPI(FilemoonCustom())
-        registerExtractorAPI(DoodLaExtractor())
-        registerExtractorAPI(OkRu())
+        registerExtractorAPI(AlternativeVidHide())
+        registerExtractorAPI(AlternativeFilemoon())
     }
 }
