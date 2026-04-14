@@ -10,22 +10,14 @@ class NapusExtractor : ExtractorApi() {
     override val requiresReferer = true
 
     override suspend fun getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit) {
-        // Logika untuk mengekstrak direct link jika Napus memiliki player sendiri
-        // Jika hanya sebagai portal, biarkan loadExtractor di Provider yang bekerja mencari host yang didukung
-        val doc = app.get(url, referer = referer).document
-        val videoUrl = doc.selectFirst("source")?.attr("src") ?: ""
-        
-        if (videoUrl.isNotEmpty()) {
-            callback.invoke(
-                newExtractorLink(
-                    this.name,
-                    this.name,
-                    videoUrl,
-                    referer ?: "",
-                    Qualities.Unknown.value,
-                    videoUrl.contains(".m3u8")
-                )
-            )
-        }
+        // Logika ekstraksi video dari Napus (Contoh: Menangani M3U8)
+        val isM3u8 = url.contains(".m3u8")
+        val type = if (isM3u8) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
+
+        // WAJIB menggunakan newExtractorLink dengan lambda
+        callback.invoke(newExtractorLink(this.name, this.name, url, type) {
+            this.referer = referer ?: ""
+            this.quality = Qualities.Unknown.value
+        })
     }
 }

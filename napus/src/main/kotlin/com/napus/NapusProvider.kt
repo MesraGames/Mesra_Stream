@@ -13,69 +13,70 @@ class NapusProvider : MainAPI() {
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse? {
-        // Selektor CSS untuk mengambil daftar item di halaman utama
+        // Mengambil halaman utama (Home)
+        val document = app.get(mainUrl).document
         val items = ArrayList<HomePageList>()
-        val urls = listOf(
-            "$mainUrl/movies/" to "Movies",
-            "$mainUrl/tvshows/" to "TV Series",
-            "$mainUrl/trending/" to "Trending"
-        )
 
-        urls.forEach { (url, title) ->
-            val doc = app.get(url).document
-            // Mencari elemen article.item yang berisi informasi film
-            val res = doc.select("div.items article").mapNotNull {
-                it.toSearchResult()
+        // Selector untuk section: Latest Movies, Series, dsb.
+        document.select("div.list-update_items-wrapper").forEach { section ->
+            val title = section.selectFirst("div.list-update_items-header h2")?.text() ?: "Terbaru"
+            val elements = section.select("div.list-update_item").mapNotNull { element ->
+                element.toSearchResult()
             }
-            items.add(HomePageList(title, res))
+            if (elements.isNotEmpty()) {
+                items.add(HomePageList(title, elements))
+            }
         }
 
         return newHomePageResponse(items, false)
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-        // Mengambil judul, URL, dan poster dari elemen HTML
-        val title = this.selectFirst("div.data h3 a")?.text() ?: return null
-        val href = this.selectFirst("div.data h3 a")?.attr("href") ?: return null
-        val posterUrl = this.selectFirst("div.poster img")?.attr("src")
-        val type = if (href.contains("/tvshows/")) TvType.TvSeries else TvType.Movie
+        // Selector untuk judul, link, dan poster pada grid item
+        val title = this.selectFirst("a")?.attr("title") ?: this.selectFirst("h3")?.text() ?: return null
+        val href = fixUrl(this.selectFirst("a")?.attr("href") ?: return null)
+        val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
+        
+        // Cek apakah konten adalah TV Series atau Movie berdasarkan label atau icon
+        val type = if (this.select(".type-series").isNotEmpty() || href.contains("/series/")) TvType.TvSeries else TvType.Movie
 
-        return if (type == TvType.Movie) {
-            newMovieSearchResponse(title, href, type) { this.posterUrl = posterUrl }
+        return if (type == TvType.TvSeries) {
+            newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
+                this.posterUrl = posterUrl
+            }
         } else {
-            newTvSeriesSearchResponse(title, href, type) { this.posterUrl = posterUrl }
+            newMovieSearchResponse(title, href, TvType.Movie) {
+                this.posterUrl = posterUrl
+            }
         }
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
         // Melakukan pencarian menggunakan parameter ?s=
-        val doc = app.get("$mainUrl/?s=$query").document
-        return doc.select("div.result-item article").mapNotNull {
-            val title = it.selectFirst("div.details div.title a")?.text() ?: return@mapNotNull null
-            val href = it.selectFirst("div.details div.title a")?.attr("href") ?: return@mapNotNull null
-            val poster = it.selectFirst("div.image img")?.attr("src")
-            newMovieSearchResponse(title, href, TvType.Movie) { this.posterUrl = poster }
+        val document = app.get("$mainUrl/?s=$query").document
+        return document.select("div.list-update_item").mapNotNull {
+            it.toSearchResult()
         }
     }
 
     override suspend fun load(url: String): LoadResponse? {
-        val doc = app.get(url).document
-        val title = doc.selectFirst("div.data h1")?.text() ?: return null
-        val poster = doc.selectFirst("div.poster img")?.attr("src")
-        val plot = doc.selectFirst("div.wp-content p")?.text()
-        val type = if (url.contains("/tvshows/")) TvType.TvSeries else TvType.Movie
+        val document = app.get(url).document
 
-        return if (type == TvType.TvSeries) {
-            // Mengambil list episode untuk tipe TV Series
-            val episodes = doc.select("ul.episodios li").mapNotNull {
-                val href = it.selectFirst("div.episodiotitle a")?.attr("href") ?: return@mapNotNull null
-                val name = it.selectFirst("div.episodiotitle a")?.text()
-                val seasonNum = it.selectFirst("div.numerando")?.text()?.substringBefore("-")?.trim()?.toIntOrNull()
-                val episodeNum = it.selectFirst("div.numerando")?.text()?.substringAfter("-")?.trim()?.toIntOrNull()
-                newEpisode(href) {
-                    this.name = name
-                    this.season = seasonNum
-                    this.episode = episodeNum
+        // Selector metadata detail (Judul, Poster, Plot)
+        val title = document.selectFirst("h1.entry-title")?.text()?.trim() ?: ""
+        val poster = fixUrlNull(document.selectFirst(".poster img")?.attr("src"))
+        val plot = document.selectFirst(".entry-content p")?.text()?.trim()
+        
+        val isSeries = url.contains("/series/") || document.select(".episodios").isNotEmpty()
+
+        return if (isSeries) {
+            val episodes = document.select(".episodios li").mapNotNull { episode ->
+                val epHref = episode.selectFirst("a")?.attr("href") ?: return@mapNotNull null
+                val epName = episode.selectFirst("a")?.text() ?: "Episode"
+                
+                // Menggunakan newEpisode untuk menghindari error deprecation
+                newEpisode(epHref) {
+                    this.name = epName
                 }
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
@@ -91,26 +92,25 @@ class NapusProvider : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val doc = app.get(data).document
-        // Mencari URL embed dari tab player atau iframe
-        doc.select("ul#playeroptionsul li").forEach {
-            val postId = it.attr("data-post")
-            val nume = it.attr("data-nume")
-            val type = it.attr("data-type")
-            
-            // Request AJAX untuk mendapatkan iframe source
-            val res = app.post(
-                url = "$mainUrl/wp-admin/admin-ajax.php",
-                data = mapOf("action" to "doo_player_ajax", "post" to postId, "nume" to nume, "type" to type)
-            ).parsed<ResponseSource>()
-            
-            val embedUrl = res.embed_url ?: ""
-            if (embedUrl.isNotEmpty()) {
+        val document = app.get(data).document
+
+        // Mencari URL embed dari player options
+        document.select(".dooplay_player_option").forEach { option ->
+            val embedUrl = option.attr("data-url") // Biasanya base64 atau direct link
+            if (embedUrl.isNotBlank()) {
+                // Gunakan 3 parameter sesuai instruksi
                 loadExtractor(embedUrl, subtitleCallback, callback)
             }
         }
+
+        // Mencari iframe di dalam konten jika player option tidak ditemukan
+        document.select("iframe").forEach { iframe ->
+            val src = iframe.attr("src")
+            if (src.isNotBlank()) {
+                loadExtractor(src, subtitleCallback, callback)
+            }
+        }
+
         return true
     }
-
-    data class ResponseSource(val embed_url: String?)
 }

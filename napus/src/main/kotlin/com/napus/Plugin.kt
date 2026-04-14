@@ -7,7 +7,7 @@ import android.content.Context
 @CloudstreamPlugin
 class NapusPlugin : Plugin() {
     override fun load(context: Context) {
-        // Registrasi provider dan extractor ke system Cloudstream
+        // Mendaftarkan Provider dan Extractor ke sistem Cloudstream
         registerMainAPI(NapusProvider())
         registerExtractorAPI(NapusExtractor())
     }
