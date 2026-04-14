@@ -1,44 +1,24 @@
 package com.napus
-
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import android.content.Context
-import org.jsoup.nodes.Element
-import com.lagradost.cloudstream3.network.CloudflareKiller
+import com.lagradost.cloudstream3.extractors.*
 
 class NapusExtractor : ExtractorApi() {
-    override var name = "NapusCustom"
+    override var name = "Napus"
     override var mainUrl = "https://napus.org"
     override val requiresReferer = true
 
-    override suspend fun getUrl(url: String, referer: String?, callback: (ExtractorLink) -> Unit) {
-        // Scraping logic untuk server internal jika ada
-        val doc = app.get(url, referer = referer).text
-        val videoUrl = "" // Extract raw mp4 via regex
-        if (videoUrl.isNotEmpty()) {
-            callback.invoke(
-                ExtractorLink(name, name, videoUrl, referer ?: "", Qualities.Unknown.value, false)
-            )
-        }
+    override suspend fun getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit) {
+        // Logika ekstraksi manual jika diperlukan, di sini kita asumsikan link langsung bisa diputar atau dihandle oleh player internal
+        callback.invoke(ExtractorLink(this.name, this.name, url, referer ?: "", Qualities.Unknown.value, url.contains(".m3u8")))
     }
 }
 
-class StreamWish : VidhideExtractor() {
-    override var name = "StreamWish"
+// Extractor tambahan yang sering digunakan oleh situs movie Indonesia
+class StreamWishExtractor : StreamWish() {
     override var mainUrl = "https://streamwish.to"
 }
 
-class Filemoon : Filesim() {
-    override var name = "Filemoon"
-    override var mainUrl = "https://filemoon.sx"
-}
-
-open class VidhideExtractor : ExtractorApi() {
-    override var name = "Vidhide"
-    override var mainUrl = "https://vidhide.com"
-    override val requiresReferer = false
-
-    override suspend fun getUrl(url: String, referer: String?, callback: (ExtractorLink) -> Unit) {
-        loadExtractor(url, referer, callback)
-    }
+class VidhideExtractor : Vidhide() {
+    override var mainUrl = "https://vidhidepro.com"
 }

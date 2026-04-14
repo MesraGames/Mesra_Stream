@@ -1,20 +1,16 @@
 package com.napus
-
-import com.lagradost.cloudstream3.Plugin
-import com.lagradost.cloudstream3.CloudstreamPlugin
+import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
+import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
-import com.lagradost.cloudstream3.utils.ExtractorApi
 
 @CloudstreamPlugin
 class NapusPlugin : Plugin() {
     override fun load(context: Context) {
-        // Register Provider Utama
+        // Registrasi provider utama
         registerMainAPI(NapusProvider())
-        
-        // Register Semua Extractor yang digunakan
+        // Registrasi semua extractor yang telah didefinisikan
         registerExtractorAPI(NapusExtractor())
-        registerExtractorAPI(StreamWish())
-        registerExtractorAPI(Filemoon())
+        registerExtractorAPI(StreamWishExtractor())
         registerExtractorAPI(VidhideExtractor())
     }
 }
