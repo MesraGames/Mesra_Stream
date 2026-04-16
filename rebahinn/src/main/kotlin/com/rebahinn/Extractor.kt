@@ -5,15 +5,14 @@ import com.lagradost.cloudstream3.extractors.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 
-// 1. Dingtezuni Extractor
+// 1. Extractor Kustom untuk Dingtezuni
 class DingtezuniExtractor : ExtractorApi() {
-    override var name = "Dingtezuni" // Gunakan var, bukan val
+    override var name = "Dingtezuni"
     override var mainUrl = "https://dingtezuni.com"
     override val requiresReferer = true
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         val response = app.get(url, referer = referer).text
-        
         val unpacked = if (response.contains("eval(function(p,a,c,k,e,d)")) {
             getAndUnpack(response) ?: response
         } else response
@@ -27,25 +26,31 @@ class DingtezuniExtractor : ExtractorApi() {
     }
 }
 
-// 2. StreamWish (Gunakan StreamWishExtractor yang sudah ada di library)
+// 2. Extractor untuk StreamWish
 class RebahinStreamWish : StreamWishExtractor() {
     override var name = "Rebahin Wish"
     override var mainUrl = "https://streamwish.to"
 }
 
-// 3. Vidstack (Biasanya menggunakan VidhideExtractor di library Cloudstream)
+// 3. Extractor untuk Vidstack/Vidhide
 class RebahinVidstack : VidhideExtractor() { 
     override var name = "Rebahin Vidstack"
     override var mainUrl = "https://vidstack.icu"
 }
 
-// 5. Hxfile
+// 4. Extractor untuk GDrive Player
+class RebahinGdrive : GdrivePlayerExtractor() { 
+    override var name = "Rebahin GDrive"
+    override var mainUrl = "https://gdriveplayer.to"
+}
+
+// 5. Extractor untuk Hxfile
 class RebahinHxfile : Hxfile() {
     override var name = "Rebahin Hxfile"
     override var mainUrl = "https://hxfile.co"
 }
 
-// 6. DoodStream
+// 6. Extractor untuk DoodStream
 class RebahinDood : DoodLaExtractor() {
     override var name = "Rebahin Dood"
     override var mainUrl = "https://dood.li"

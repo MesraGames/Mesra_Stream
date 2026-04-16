@@ -118,7 +118,8 @@ class RebahinnProvider : MainAPI() {
                     M3u8Helper.generateM3u8(
                         name, 
                         foundUrl, 
-                        mainUrl
+                        referer = mainUrl, // Tambahkan referer agar server tidak menolak
+                        headers = mapOf("Referer" to mainUrl) // Tambahkan header kunci
                     ).forEach { link ->
                         callback.invoke(link)
                     }
