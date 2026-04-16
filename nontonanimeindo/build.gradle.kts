@@ -7,14 +7,10 @@ version = 1
 cloudstream {
     description = "Nontonanimeindo Provider"
     language = "id"
-    authors = listOf("Cloudstream AI")
+    authors = listOf("RavenX")
 
     /**
-     * Status int as the following:
-     * 0: Down
-     * 1: Ok
-     * 2: Slow
-     * 3: Beta only
+     * Status: 1 (Ok)
      * */
     status = 1
     tvTypes = listOf(
@@ -28,5 +24,5 @@ cloudstream {
 }
 
 dependencies {
-    // Tambahkan dependensi khusus ekstensi di sini jika diperlukan
+    // Dependensi standar sudah dihandle oleh core
 }
