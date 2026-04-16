@@ -5,14 +5,14 @@ import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
 
 @CloudstreamPlugin
-class NontonAnimeIndoPlugin : Plugin() {
+class NontonanimeindoPlugin: Plugin() {
     override fun load(context: Context) {
-        // Registrasi Provider Utama
+        // Register API utama
         registerMainAPI(NontonanimeindoProvider())
         
-        // Registrasi Custom dan External Extractors
-        registerExtractorAPI(NontonAnimeIndoExtractor())
-        registerExtractorAPI(AlternativeVidHide())
-        registerExtractorAPI(AlternativeFilemoon())
+        // Register semua extractor yang didefinisikan di Extractor.kt
+        registerExtractorAPI(NontonAnimeIndoVid())
+        registerExtractorAPI(NontonAnimeIndoWish())
+        registerExtractorAPI(NontonAnimeIndoVoe())
     }
 }

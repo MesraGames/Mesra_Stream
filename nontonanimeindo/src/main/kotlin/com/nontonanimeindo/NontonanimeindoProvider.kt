@@ -1,110 +1,107 @@
 package com.nontonanimeindo
 
+import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.loadExtractor
-import org.jsoup.nodes.Document
-import okhttp3.Interceptor
-import okhttp3.Response
+import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addEpisodes
 
 class NontonanimeindoProvider : MainAPI() {
     override var mainUrl = "https://nontonanimeindo.id"
     override var name = "NontonAnimeIndo"
-    override val hasMainPage = true
+    override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie)
     override var lang = "id"
-    override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
+    override val hasMainPage = true
 
-    override suspend fun getMainPage(page: Int, request: HomePageRequest): HomePageResponse? {
-        val document = app.get(mainUrl).document
-        val home = mutableListOf<HomePageList>()
+    override val mainPage = mainPageOf(
+        "$mainUrl/anime-terbaru/" to "Anime Terbaru",
+        "$mainUrl/movie-terbaru/" to "Movie Terbaru",
+        "$mainUrl/popular/" to "Populer"
+    )
 
-        // TODO: Sesuaikan selector CSS untuk section utama (Latest Update, Popular, dll)
-        document.select("div.post-show").forEach { block ->
-            val title = block.selectFirst("div.title-section h2")?.text() ?: "Terbaru"
-            val items = block.select("article.post-item").mapNotNull {
-                it.toSearchResult()
-            }
-            if (items.isNotEmpty()) home.add(HomePageList(title, items))
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        val doc = app.get(request.data + if (page > 1) "page/$page/" else "").document
+        // Selector: .listupd article atau .post-show .clatest
+        val home = doc.select(".listupd article, .post-show article").mapNotNull {
+            it.toSearchResult()
         }
-
-        return newHomePageResponse(home, false)
+        return newHomePageResponse(request.name, home)
     }
 
-    private fun org.jsoup.nodes.Element.toSearchResult(): SearchResponse? {
-        val title = this.selectFirst("h2.entry-title, h3.title")?.text() ?: return null
+    private fun Element.toSearchResult(): SearchResponse? {
+        val title = this.selectFirst("h2, .entry-title")?.text() ?: return null
         val href = this.selectFirst("a")?.attr("href") ?: return null
         val posterUrl = this.selectFirst("img")?.attr("src")
+        val type = if (href.contains("/movie/")) TvType.AnimeMovie else TvType.Anime
 
-        return newAnimeSearchResponse(title, href, TvType.Anime) {
+        return newAnimeSearchResponse(title, href, type) {
             this.posterUrl = posterUrl
         }
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        // TODO: Cek apakah query parameter pencarian sudah benar (?s=)
-        val document = app.get("$mainUrl/?s=$query").document
-        return document.select("article.post-item, div.bs").mapNotNull {
+        val doc = app.get("$mainUrl/?s=$query").document
+        return doc.select(".listupd article").mapNotNull {
             it.toSearchResult()
         }
     }
 
-    override suspend fun load(url: String): LoadResponse? {
-        val document = app.get(url).document
-        val title = document.selectFirst("h1.entry-title")?.text() ?: ""
-        val poster = document.selectFirst("div.thumb img")?.attr("src")
-        val plot = document.selectFirst("div.entry-content p, div.description")?.text()
+    override suspend fun load(url: String): LoadResponse {
+        val doc = app.get(url).document
+        val title = doc.selectFirst(".entry-title")?.text() ?: ""
+        val poster = doc.selectFirst(".thumb img")?.attr("src")
+        val description = doc.selectFirst(".entry-content p")?.text()
+        
+        val isMovie = url.contains("/movie/")
+        val type = if (isMovie) TvType.AnimeMovie else TvType.Anime
 
-        // Logika pengecekan apakah ini Movie atau Series berdasarkan list episode
-        val isMovie = document.select("div.eplister li, ul.episodelist li").isEmpty()
-
-        return if (isMovie) {
-            newMovieLoadResponse(title, url, TvType.AnimeMovie, url) {
+        if (isMovie) {
+            return newMovieLoadResponse(title, url, TvType.AnimeMovie, url) {
                 this.posterUrl = poster
-                this.plot = plot
+                this.plot = description
             }
         } else {
-            val episodes = document.select("div.eplister li, ul.episodelist li").mapNotNull {
-                val a = it.selectFirst("a") ?: return@mapNotNull null
-                val href = a.attr("href")
-                val name = it.select(".epl-num").text().ifEmpty { it.text() }
-                Episode(href, name)
+            // Selector Episode: .eplister li atau .listeps li
+            val episodes = doc.select(".eplister li, .listeps li").mapNotNull {
+                val link = it.selectFirst("a")?.attr("href") ?: return@mapNotNull null
+                val name = it.selectFirst(".epl-num, .eps")?.text() ?: ""
+                newEpisode(link) {
+                    this.name = name
+                    this.episode = name.filter { char -> char.isDigit() }.toIntOrNull()
+                }
             }.reversed()
 
-            newTvSeriesLoadResponse(title, url, TvType.Anime, episodes) {
+            return newAnimeLoadResponse(title, url, type) {
                 this.posterUrl = poster
-                this.plot = plot
+                this.plot = description
+                addEpisodes(TvType.Anime, episodes)
             }
         }
     }
 
     override suspend fun loadLinks(
         data: String,
-        isDataJob: Boolean,
+        isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).document
-
-        // TODO: Ekstrak link dari iframe atau tombol server
-        document.select("select.mirror option, ul.m3u8-server li, div.player-embed iframe").forEach { 
-            val rawUrl = it.attr("value").ifEmpty { it.attr("src") }
-            if (rawUrl.isNotEmpty()) {
-                // Jika link di-encode base64, gunakan base64Decode(rawUrl)
-                val finalUrl = if (rawUrl.startsWith("http")) rawUrl else "https:$rawUrl"
-                loadExtractor(finalUrl, data, subtitleCallback, callback)
+        val doc = app.get(data).document
+        // Selector Iframe: .video-content iframe atau .player-embed iframe
+        doc.select("select.mirror option, .mirror-item a").forEach {
+            val embedData = it.attr("value").ifBlank { it.attr("data-link") }
+            if (embedData.isNotEmpty()) {
+                // Decode base64 jika diperlukan, atau langsung load
+                val iframeUrl = if (embedData.startsWith("http")) embedData else "" // Logika extra jika butuh base64 decode
+                if (iframeUrl.isNotEmpty()) {
+                    loadExtractor(iframeUrl, data, subtitleCallback, callback)
+                }
             }
+        }
+        
+        doc.select("iframe[src]").forEach {
+            val src = it.attr("src")
+            loadExtractor(src, data, subtitleCallback, callback)
         }
 
         return true
-    }
-}
-
-class NontonAnimeIndoInterceptor : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val request = chain.request().newBuilder()
-            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-            .header("Referer", "https://nontonanimeindo.id/")
-            .build()
-        return chain.proceed(request)
     }
 }
