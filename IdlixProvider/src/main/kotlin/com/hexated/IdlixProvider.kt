@@ -1,6 +1,9 @@
 package com.hexated
 
+<<<<<<< HEAD
 import android.util.Log
+=======
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
 import com.lagradost.cloudstream3.Actor
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.ErrorLoadingException
@@ -24,7 +27,11 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.getQualityFromString
 import com.lagradost.cloudstream3.mainPageOf
+<<<<<<< HEAD
 import com.lagradost.cloudstream3.network.WebViewResolver
+=======
+import com.lagradost.cloudstream3.network.CloudflareKiller
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
@@ -38,13 +45,21 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+<<<<<<< HEAD
 import org.json.JSONObject
+=======
+import org.jsoup.nodes.Document
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
 import java.security.MessageDigest
 import java.text.Normalizer
 
 class IdlixProvider : MainAPI() {
     override var mainUrl = base64Decode("aHR0cHM6Ly96MS5pZGxpeGt1LmNvbQ==")
+<<<<<<< HEAD
     override var name = "Idlix🐍"
+=======
+    override var name = "Idlix"
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
     override val hasMainPage = true
     override var lang = "id"
     override val hasDownloadSupport = true
@@ -54,6 +69,10 @@ class IdlixProvider : MainAPI() {
         TvType.Anime,
         TvType.AsianDrama
     )
+<<<<<<< HEAD
+=======
+    private val cloudflareInterceptor by lazy { CloudflareKiller() }
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
 
     override val mainPage = mainPageOf(
         "$mainUrl/api/movies?page=%d&limit=36&sort=createdAt" to "Movie Terbaru",
@@ -70,7 +89,13 @@ class IdlixProvider : MainAPI() {
         request: MainPageRequest
     ): HomePageResponse {
         val url = if (request.data.contains("%d")) request.data.format(page) else request.data
+<<<<<<< HEAD
         val res = app.get(url, timeout = 10000L).parsedSafe<ApiResponse>() ?: return newHomePageResponse(request.name, emptyList())
+=======
+        warmupSession()
+        val res = app.get(url, timeout = 10000L, interceptor = cloudflareInterceptor).parsedSafe<ApiResponse>()
+            ?: return newHomePageResponse(request.name, emptyList())
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
         val home = res.data.map { item ->
             val title = item.title ?: "UnKnown"
             val poster = item.posterPath?.let { "https://image.tmdb.org/t/p/w342$it" }
@@ -96,11 +121,20 @@ class IdlixProvider : MainAPI() {
         return newHomePageResponse(request.name, home)
     }
 
+<<<<<<< HEAD
     override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query,1)?.items
 
     override suspend fun search(query: String, page: Int): SearchResponseList? {
         val url = "$mainUrl/api/search?q=$query&page=$page&limit=8"
         val res = app.get(url).parsedSafe<SearchApiResponse>() ?: return null
+=======
+    override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query, 1)?.items
+
+    override suspend fun search(query: String, page: Int): SearchResponseList? {
+        val url = "$mainUrl/api/search?q=$query&page=$page&limit=8"
+        warmupSession()
+        val res = app.get(url, interceptor = cloudflareInterceptor).parsedSafe<SearchApiResponse>() ?: return null
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
         val items = res.results
         val results = items.mapNotNull { item ->
             val title = item.title
@@ -135,7 +169,12 @@ class IdlixProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
+<<<<<<< HEAD
         val response = app.get(url, timeout = 10000L)
+=======
+        warmupSession()
+        val response = app.get(url, timeout = 10000L, interceptor = cloudflareInterceptor)
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
 
         val data = response.parsedSafe<DetailResponse>()
             ?: throw ErrorLoadingException("Invalid JSON")
@@ -149,7 +188,11 @@ class IdlixProvider : MainAPI() {
             ?.toIntOrNull()
 
         val tags = data.genres?.mapNotNull { it.name } ?: emptyList()
+<<<<<<< HEAD
         val logourl = "https://image.tmdb.org/t/p/w500"+data.logoPath
+=======
+        val logourl = "https://image.tmdb.org/t/p/w500" + data.logoPath
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
         val actors = data.cast?.map {
             Actor(it.name ?: "", it.profilePath?.let { p -> "https://image.tmdb.org/t/p/w185$p" })
         } ?: emptyList()
@@ -164,11 +207,18 @@ class IdlixProvider : MainAPI() {
         }
 
         val recommendations = try {
+<<<<<<< HEAD
             app.get(relatedUrl, referer = mainUrl)
                 .parsedSafe<ApiResponse>()?.data?.mapNotNull { item ->
 
                     val title = item.title ?: return@mapNotNull null
                     val poster = item.posterPath?.let { "https://image.tmdb.org/t/p/w342$it" }
+=======
+            app.get(relatedUrl, referer = mainUrl, interceptor = cloudflareInterceptor)
+                .parsedSafe<ApiResponse>()?.data?.mapNotNull { item ->
+                    val recTitle = item.title ?: return@mapNotNull null
+                    val recPoster = item.posterPath?.let { "https://image.tmdb.org/t/p/w342$it" }
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
 
                     val link = if (item.contentType == "movie") {
                         "$mainUrl/api/movies/${item.slug}"
@@ -177,23 +227,37 @@ class IdlixProvider : MainAPI() {
                     }
 
                     if (item.contentType == "movie") {
+<<<<<<< HEAD
                         newMovieSearchResponse(title, link, TvType.Movie) {
                             this.posterUrl = poster
+=======
+                        newMovieSearchResponse(recTitle, link, TvType.Movie) {
+                            this.posterUrl = recPoster
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
                             this.year = (item.releaseDate ?: item.firstAirDate)
                                 ?.substringBefore("-")
                                 ?.toIntOrNull()
                         }
                     } else {
+<<<<<<< HEAD
                         newTvSeriesSearchResponse(title, link, TvType.TvSeries) {
                             this.posterUrl = poster
+=======
+                        newTvSeriesSearchResponse(recTitle, link, TvType.TvSeries) {
+                            this.posterUrl = recPoster
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
                             this.year = (item.releaseDate ?: item.firstAirDate)
                                 ?.substringBefore("-")
                                 ?.toIntOrNull()
                         }
                     }
+<<<<<<< HEAD
 
                 } ?: emptyList()
 
+=======
+                } ?: emptyList()
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
         } catch (_: Exception) {
             emptyList()
         }
@@ -203,10 +267,19 @@ class IdlixProvider : MainAPI() {
 
             data.firstSeason?.episodes?.forEach { ep ->
                 episodes.add(
+<<<<<<< HEAD
                     newEpisode( LoadData(
                         id = ep.id ?: return@forEach,
                         type = "episode"
                     ).toJson()) {
+=======
+                    newEpisode(
+                        LoadData(
+                            id = ep.id ?: return@forEach,
+                            type = "episode"
+                        ).toJson()
+                    ) {
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
                         this.name = ep.name
                         this.season = data.firstSeason.seasonNumber
                         this.episode = ep.episodeNumber
@@ -225,7 +298,11 @@ class IdlixProvider : MainAPI() {
                 val seasonUrl = "$mainUrl/api/series/${data.slug}/season/$seasonNum"
 
                 val seasonData = try {
+<<<<<<< HEAD
                     val res = app.get(seasonUrl, referer = mainUrl)
+=======
+                    val res = app.get(seasonUrl, referer = mainUrl, interceptor = cloudflareInterceptor)
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
                     res.parsedSafe<SeasonWrapper>()?.season
                 } catch (_: Exception) {
                     null
@@ -233,10 +310,19 @@ class IdlixProvider : MainAPI() {
 
                 seasonData?.episodes?.forEach { ep ->
                     episodes.add(
+<<<<<<< HEAD
                         newEpisode( LoadData(
                             id = ep.id ?: return@forEach,
                             type = "episode"
                         ).toJson()) {
+=======
+                        newEpisode(
+                            LoadData(
+                                id = ep.id ?: return@forEach,
+                                type = "episode"
+                            ).toJson()
+                        ) {
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
                             this.name = ep.name
                             this.season = seasonNum
                             this.episode = ep.episodeNumber
@@ -265,10 +351,22 @@ class IdlixProvider : MainAPI() {
                 this.recommendations = recommendations
             }
         } else {
+<<<<<<< HEAD
             newMovieLoadResponse(title, url, TvType.Movie,  LoadData(
                 id = data.id ?: "",
                 type = "movie"
             ).toJson()) {
+=======
+            newMovieLoadResponse(
+                title,
+                url,
+                TvType.Movie,
+                LoadData(
+                    id = data.id ?: "",
+                    type = "movie"
+                ).toJson()
+            ) {
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
                 this.posterUrl = poster
                 this.backgroundPosterUrl = backdrop
                 this.logoUrl = logourl
@@ -291,7 +389,10 @@ class IdlixProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+<<<<<<< HEAD
 
+=======
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
         val parsed = try {
             AppUtils.parseJson<LoadData>(data)
         } catch (_: Exception) {
@@ -300,14 +401,30 @@ class IdlixProvider : MainAPI() {
 
         val contentId = parsed.id
         val contentType = parsed.type
+<<<<<<< HEAD
 
         val ts = System.currentTimeMillis()
         val aclrRes = app.get("$mainUrl/pagead/ad_frame.js?_=$ts").text
+=======
+        warmupSession()
+
+        val ts = System.currentTimeMillis()
+        val aclrRes = runCatching {
+            app.get(
+                "$mainUrl/pagead/ad_frame.js?_=$ts",
+                referer = "$mainUrl/",
+                interceptor = cloudflareInterceptor
+            ).text
+        }.getOrNull().orEmpty()
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
         val aclr = Regex("""__aclr\s*=\s*"([a-f0-9]+)"""")
             .find(aclrRes)
             ?.groupValues?.getOrNull(1)
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
         val challengejson = """
 {
     "contentType": "$contentType",
@@ -326,7 +443,13 @@ class IdlixProvider : MainAPI() {
         val challengeRes = app.post(
             "$mainUrl/api/watch/challenge",
             requestBody = challengejson.toRequestBody("application/json".toMediaType()),
+<<<<<<< HEAD
             headers = headers
+=======
+            headers = headers,
+            referer = "$mainUrl/",
+            interceptor = cloudflareInterceptor
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
         ).parsedSafe<ChallengeResponse>() ?: return false
 
         val nonce = solvePow(
@@ -352,6 +475,7 @@ class IdlixProvider : MainAPI() {
                 "referer" to mainUrl,
                 "user-agent" to USER_AGENT,
             )
+<<<<<<< HEAD
         ).text
 
         val json = JSONObject(solveRes)
@@ -374,6 +498,58 @@ class IdlixProvider : MainAPI() {
         return true
     }
 
+=======
+            ,
+            referer = "$mainUrl/",
+            interceptor = cloudflareInterceptor
+        ).parsedSafe<SolveResponse>() ?: return false
+        val embedUrl = solveRes.embedUrl?.let { if (it.startsWith("http")) it else "$mainUrl$it" } ?: return false
+        val finalUrl = unwrapIframeUrl(embedUrl) ?: return false
+        if (finalUrl.contains("jeniusplay", true)) {
+            Jeniusplay().getUrl(finalUrl, mainUrl, subtitleCallback, callback)
+        } else {
+            loadExtractor(finalUrl, mainUrl, subtitleCallback, callback)
+        }
+        return true
+    }
+
+    private suspend fun warmupSession() {
+        runCatching {
+            app.get(
+                "$mainUrl/",
+                referer = "$mainUrl/",
+                interceptor = cloudflareInterceptor
+            )
+        }
+        runCatching {
+            app.get(
+                "$mainUrl/api/homepage/ads/surface/preroll",
+                referer = "$mainUrl/",
+                interceptor = cloudflareInterceptor
+            )
+        }
+    }
+
+    private suspend fun unwrapIframeUrl(url: String): String? {
+        var current = url
+        repeat(5) {
+            val response = app.get(
+                current,
+                referer = "$mainUrl/",
+                interceptor = cloudflareInterceptor
+            )
+            val next = extractIframeUrl(response.document) ?: return current
+            current = if (next.startsWith("http")) next else "$mainUrl$next"
+        }
+        return current
+    }
+
+    private fun extractIframeUrl(document: Document): String? {
+        val iframe = document.selectFirst("iframe[src], iframe[data-src]") ?: return null
+        return iframe.attr("src").ifBlank { iframe.attr("data-src") }.takeIf { it.isNotBlank() }
+    }
+
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
     fun solvePow(challenge: String, difficulty: Int): Int {
         val target = "0".repeat(difficulty)
 
@@ -400,6 +576,7 @@ fun getSearchQuality(check: String?): SearchQuality? {
     val u = Normalizer.normalize(s, Normalizer.Form.NFKC).lowercase()
     val patterns = listOf(
         Regex("\\b(4k|ds4k|uhd|2160p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.FourK,
+<<<<<<< HEAD
 
         // CAM / THEATRE SOURCES FIRST
         Regex("\\b(hdts|hdcam|hdtc)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HdCam,
@@ -420,12 +597,26 @@ fun getSearchQuality(check: String?): SearchQuality? {
         // GENERIC HD LAST
         Regex("\\b(hdrip|hdtv)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HD,
 
+=======
+        Regex("\\b(hdts|hdcam|hdtc)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HdCam,
+        Regex("\\b(camrip|cam[- ]?rip)\\b", RegexOption.IGNORE_CASE) to SearchQuality.CamRip,
+        Regex("\\b(cam)\\b", RegexOption.IGNORE_CASE) to SearchQuality.Cam,
+        Regex("\\b(web[- ]?dl|webrip|webdl)\\b", RegexOption.IGNORE_CASE) to SearchQuality.WebRip,
+        Regex("\\b(bluray|bdrip|blu[- ]?ray)\\b", RegexOption.IGNORE_CASE) to SearchQuality.BlueRay,
+        Regex("\\b(1440p|qhd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.BlueRay,
+        Regex("\\b(1080p|fullhd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HD,
+        Regex("\\b(720p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.SD,
+        Regex("\\b(hdrip|hdtv)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HD,
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
         Regex("\\b(dvd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.DVD,
         Regex("\\b(hq)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HQ,
         Regex("\\b(rip)\\b", RegexOption.IGNORE_CASE) to SearchQuality.CamRip
     )
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 7ff19bb0652272b395e3f987a630dd3b09b3e32c
     for ((regex, quality) in patterns) if (regex.containsMatchIn(u)) return quality
     return null
 }
