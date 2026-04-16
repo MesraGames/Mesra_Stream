@@ -38,19 +38,13 @@ class RebahinVidstack : VidhideExtractor() {
     override var mainUrl = "https://vidstack.icu"
 }
 
-// 4. Extractor untuk GDrive Player
-class RebahinGdrive : GdrivePlayerExtractor() { 
-    override var name = "Rebahin GDrive"
-    override var mainUrl = "https://gdriveplayer.to"
-}
-
-// 5. Extractor untuk Hxfile
+// 4. Extractor untuk Hxfile
 class RebahinHxfile : Hxfile() {
     override var name = "Rebahin Hxfile"
     override var mainUrl = "https://hxfile.co"
 }
 
-// 6. Extractor untuk DoodStream
+// 5. Extractor untuk DoodStream
 class RebahinDood : DoodLaExtractor() {
     override var name = "Rebahin Dood"
     override var mainUrl = "https://dood.li"
