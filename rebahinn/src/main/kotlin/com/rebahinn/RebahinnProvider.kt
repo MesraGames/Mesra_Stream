@@ -31,9 +31,21 @@ class RebahinnProvider : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-        val title = this.selectFirst("h3 a, .title a")?.text() ?: return null
+        // 1. Cari judul. Jika tidak ada di teks <a>, coba cari di alt gambar
+        val title = this.selectFirst("h3 a, .title a")?.text() 
+            ?: this.selectFirst("img")?.attr("alt") 
+            ?: return null
+
         val href = fixUrl(this.selectFirst("a")?.attr("href") ?: return null)
-        val posterUrl = fixUrl(this.selectFirst("img")?.attr("src") ?: "")
+        
+        // 2. Trik Lazy Load: Cari di data-src dulu, kalau kosong baru ambil src
+        val imgElement = this.selectFirst("img")
+        val posterUrl = fixUrl(
+            imgElement?.attr("data-src")?.ifEmpty { imgElement.attr("src") } 
+            ?: imgElement?.attr("src") 
+            ?: ""
+        )
+        
         val type = if (href.contains("/tvseries/")) TvType.TvSeries else TvType.Movie
 
         return if (type == TvType.TvSeries) {
