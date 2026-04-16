@@ -3,7 +3,6 @@ package com.nontonanimeindo
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.addEpisodes
 
 class NontonanimeindoProvider : MainAPI() {
     override var mainUrl = "https://nontonanimeindo.id"
@@ -73,7 +72,7 @@ class NontonanimeindoProvider : MainAPI() {
             return newAnimeLoadResponse(title, url, type) {
                 this.posterUrl = poster
                 this.plot = description
-                addEpisodes(TvType.Anime, episodes)
+                addEpisodes(DubStatus.Subbed, episodes)
             }
         }
     }
