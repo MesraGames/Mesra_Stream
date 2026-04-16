@@ -1,54 +1,58 @@
 package com.rebahinn
 
-import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 
-// Pola Agresif ala Dingtezuni
+// 1. Dingtezuni Extractor
 class DingtezuniExtractor : ExtractorApi() {
-    override val name = "Dingtezuni"
-    override val mainUrl = "https://dingtezuni.com"
+    override var name = "Dingtezuni" // Gunakan var, bukan val
+    override var mainUrl = "https://dingtezuni.com"
     override val requiresReferer = true
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         val response = app.get(url, referer = referer).text
-        // Handle Packed script
+        
         val unpacked = if (response.contains("eval(function(p,a,c,k,e,d)")) {
-            getAndUnpack(response)
+            getAndUnpack(response) ?: response
         } else response
 
         val m3u8 = Regex("file\\s*:\\s*\"(.*?m3u8.*?)\"").find(unpacked)?.groupValues?.get(1)
             ?: Regex("source\\s*:\\s*\"(.*?)\"").find(unpacked)?.groupValues?.get(1)
 
         return if (m3u8 != null) {
-            generateM3u8(name, m3u8, referer ?: mainUrl).map { it }
+            generateM3u8(name, m3u8, referer ?: mainUrl)
         } else null
     }
 }
 
+// 2. StreamWish (Gunakan StreamWishExtractor yang sudah ada di library)
 class RebahinStreamWish : StreamWishExtractor() {
-    override val name = "Rebahin Wish"
-    override val mainUrl = "https://streamwish.to"
+    override var name = "Rebahin Wish"
+    override var mainUrl = "https://streamwish.to"
 }
 
-class RebahinVidstack : Vidstack() {
-    override val name = "Rebahin Vidstack"
-    override val mainUrl = "https://vidstack.icu"
+// 3. Vidstack (Biasanya menggunakan VidhideExtractor di library Cloudstream)
+class RebahinVidstack : VidhideExtractor() { 
+    override var name = "Rebahin Vidstack"
+    override var mainUrl = "https://vidstack.icu"
 }
 
-class RebahinGdrive : GdrivePlayer() {
-    override val name = "Rebahin GDrive"
-    override val mainUrl = "https://gdriveplayer.to"
+// 4. GDrive Player
+class RebahinGdrive : GdrivePlayerExtractor() { // Nama yang benar biasanya GdrivePlayerExtractor
+    override var name = "Rebahin GDrive"
+    override var mainUrl = "https://gdriveplayer.to"
 }
 
+// 5. Hxfile
 class RebahinHxfile : Hxfile() {
-    override val name = "Rebahin Hxfile"
-    override val mainUrl = "https://hxfile.co"
+    override var name = "Rebahin Hxfile"
+    override var mainUrl = "https://hxfile.co"
 }
 
+// 6. DoodStream
 class RebahinDood : DoodLaExtractor() {
-    override val name = "Rebahin Dood"
-    override val mainUrl = "https://dood.li"
+    override var name = "Rebahin Dood"
+    override var mainUrl = "https://dood.li"
 }
