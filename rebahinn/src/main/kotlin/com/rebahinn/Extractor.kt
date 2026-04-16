@@ -39,12 +39,6 @@ class RebahinVidstack : VidhideExtractor() {
     override var mainUrl = "https://vidstack.icu"
 }
 
-// 4. GDrive Player
-class RebahinGdrive : GdrivePlayerExtractor() { // Nama yang benar biasanya GdrivePlayerExtractor
-    override var name = "Rebahin GDrive"
-    override var mainUrl = "https://gdriveplayer.to"
-}
-
 // 5. Hxfile
 class RebahinHxfile : Hxfile() {
     override var name = "Rebahin Hxfile"

@@ -13,7 +13,6 @@ class RebahinnPlugin : Plugin() {
         registerExtractorAPI(DingtezuniExtractor())
         registerExtractorAPI(RebahinStreamWish())
         registerExtractorAPI(RebahinVidstack())
-        registerExtractorAPI(RebahinGdrive())
         registerExtractorAPI(RebahinHxfile())
         registerExtractorAPI(RebahinDood())
     }
