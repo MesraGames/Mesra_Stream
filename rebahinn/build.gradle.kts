@@ -1,13 +1,13 @@
-// use an integer for version numbers
-version = 12
+apply(plugin = "com.android.library")
+apply(plugin = "kotlin-android")
+apply(plugin = "com.lagradost.cloudstream3.gradle")
 
+version = 1
 
 cloudstream {
+    description = "Rebahinn Provider"
     language = "id"
-    // All of these properties are optional, you can safely remove them
-
-    // description = "Lorem Ipsum"
-    authors = listOf("RavenX")
+    authors = listOf("Cloudstream AI")
 
     /**
      * Status int as the following:
@@ -16,15 +16,17 @@ cloudstream {
      * 2: Slow
      * 3: Beta only
      * */
-    status = 1 // will be 3 if unspecified
+    status = 1
     tvTypes = listOf(
+        "TvSeries",
         "Movie",
         "Anime",
-        "Serial TV",
+        "AsianDrama"
     )
 
+    iconUrl = "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.rebahinn.net&size=%size%"
+}
 
-    iconUrl = ""
-
-    isCrossPlatform = true
+dependencies {
+    // Tambahkan dependensi khusus ekstensi di sini jika diperlukan
 }

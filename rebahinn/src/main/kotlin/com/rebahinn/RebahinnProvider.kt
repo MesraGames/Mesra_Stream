@@ -2,91 +2,91 @@ package com.rebahinn
 
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.loadExtractor
-import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.cloudstream3.MainPageRequest
-import com.lagradost.cloudstream3.TvType
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 
 class RebahinnProvider : MainAPI() {
     override var mainUrl = "https://www.rebahinn.net"
     override var name = "Rebahinn"
-    override val hasMainPage = true
-    override var lang = "id"
-    override val hasQuickSearch = false
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
+    override var lang = "id"
+    override val hasMainPage = true
 
     override val mainPage = mainPageOf(
-        "$mainUrl/trending/" to "Trending",
+        "$mainUrl/" to "Beranda",
         "$mainUrl/movies/" to "Movies",
-        "$mainUrl/tv-series/" to "TV Series",
+        "$mainUrl/tvseries/" to "TV Series",
         "$mainUrl/genre/action/" to "Action",
         "$mainUrl/genre/horror/" to "Horror"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        // Sesuaikan selector dengan struktur HTML Rebahinn (biasanya .ml-item atau .item)
-        val document = app.get(request.data + if (page > 1) "page/$page/" else "").document
-        val home = document.select("div.ml-item, div.item, article").mapNotNull {
+        val url = if (page <= 1) request.data else "${request.data}page/$page/"
+        val document = app.get(url).document
+        // Selector untuk item film/series biasanya berada di dalam class .items atau article
+        val items = document.select("div.items article, div.result-item article").mapNotNull {
             it.toSearchResult()
         }
-        return newHomePageResponse(request.name, home)
+        return newHomePageResponse(request.name, items)
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-        val title = this.selectFirst("h2, h3, .entry-title")?.text()?.trim() ?: return null
+        val title = this.selectFirst("h3 a, .title a")?.text() ?: return null
         val href = fixUrl(this.selectFirst("a")?.attr("href") ?: return null)
-        val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src") ?: this.selectFirst("img")?.attr("data-src"))
-        val quality = this.select(".quality, .status").text()
-        
-        // Logika sederhana untuk menentukan Movie atau TV
-        val type = if (href.contains("/tv-series/") || href.contains("/tv/")) TvType.TvSeries else TvType.Movie
+        val posterUrl = fixUrl(this.selectFirst("img")?.attr("src") ?: "")
+        val type = if (href.contains("/tvseries/")) TvType.TvSeries else TvType.Movie
 
-        return if (type == TvType.Movie) {
-            newMovieSearchResponse(title, href, TvType.Movie) {
-                this.posterUrl = posterUrl
-                addQuality(quality)
-            }
-        } else {
+        return if (type == TvType.TvSeries) {
             newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
                 this.posterUrl = posterUrl
-                addQuality(quality)
+            }
+        } else {
+            newMovieSearchResponse(title, href, TvType.Movie) {
+                this.posterUrl = posterUrl
             }
         }
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
         val document = app.get("$mainUrl/?s=$query").document
-        return document.select("div.ml-item, div.item, article").mapNotNull {
+        return document.select("div.result-item article").mapNotNull {
             it.toSearchResult()
         }
     }
 
     override suspend fun load(url: String): LoadResponse? {
         val document = app.get(url).document
-        val title = document.selectFirst("h1, .entry-title")?.text()?.trim() ?: return null
-        val poster = fixUrlNull(document.selectFirst(".poster img, .mvic-thumb img")?.attr("src"))
-        val plot = document.selectFirst(".description, .entry-content p")?.text()
-        val type = if (url.contains("/tv-series/") || url.contains("/tv/")) TvType.TvSeries else TvType.Movie
+        val title = document.selectFirst("h1, .data h1")?.text() ?: return null
+        val poster = fixUrl(document.selectFirst(".poster img")?.attr("src") ?: "")
+        val plot = document.selectFirst(".wp-content p, .resumen")?.text()
+        val year = document.selectFirst(".date")?.text()?.takeLast(4)?.toIntOrNull()
 
-        if (type == TvType.TvSeries) {
-            // Selector episode untuk TV Series (biasanya dalam list atau dropdown)
-            val episodes = document.select(".les-content a, .list-episode a").mapIndexed { index, el ->
-                val href = el.attr("href")
-                newEpisode(href) {
-                    this.name = el.text().trim()
-                    this.episode = index + 1
+        val isTv = url.contains("/tvseries/")
+
+        if (isTv) {
+            // Ambil list episode dari elemen ul.episodios atau sejenisnya
+            val episodes = document.select("ul.episodios li, .list-episodes li").mapNotNull {
+                val link = it.selectFirst("a")?.attr("href") ?: return@mapNotNull null
+                val name = it.selectFirst("a")?.text() ?: "Episode"
+                val season = it.selectFirst(".season")?.text()?.toIntOrNull() ?: 1
+                val episode = it.selectFirst(".episode")?.text()?.toIntOrNull()
+                newEpisode(link) {
+                    this.name = name
+                    this.season = season
+                    this.episode = episode
                 }
             }
             return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
                 this.plot = plot
+                this.year = year
             }
         } else {
             return newMovieLoadResponse(title, url, TvType.Movie, url) {
                 this.posterUrl = poster
                 this.plot = plot
+                this.year = year
+                addTrailer(document.selectFirst("iframe[src*=youtube]")?.attr("src"))
             }
         }
     }
@@ -98,15 +98,13 @@ class RebahinnProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data).document
-        
-        // Mencari iframe player
-        document.select("iframe, .player-embed iframe").forEach { iframe ->
-            val iframeUrl = fixUrl(iframe.attr("src"))
+        // Cari iframe player (biasanya di dalam .player-iframe atau source script)
+        document.select("iframe, .dooplay_player_option").forEach { element ->
+            val iframeUrl = fixUrl(element.attr("src").ifEmpty { element.attr("data-url") })
             if (iframeUrl.isNotEmpty()) {
                 loadExtractor(iframeUrl, data, subtitleCallback, callback)
             }
         }
-        
         return true
     }
 }

@@ -7,9 +7,12 @@ import android.content.Context
 @CloudstreamPlugin
 class RebahinnPlugin : Plugin() {
     override fun load(context: Context) {
-        // Registrasi Provider
+        // Register Provider Utama
         registerMainAPI(RebahinnProvider())
-        // Registrasi Extractor Custom
-        registerExtractorAPI(RebahinnExtractor())
+        
+        // Register Semua Extractor yang telah dibuat
+        registerExtractorAPI(RebahinnVid())
+        registerExtractorAPI(RebahinnWish())
+        registerExtractorAPI(RebahinnEmbed())
     }
 }
