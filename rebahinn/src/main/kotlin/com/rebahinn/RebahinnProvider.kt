@@ -23,7 +23,6 @@ class RebahinnProvider : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val url = if (page <= 1) request.data else "${request.data}page/$page/"
         val document = app.get(url).document
-        // Selector untuk item film/series biasanya berada di dalam class .items atau article
         val items = document.select("div.items article, div.result-item article").mapNotNull {
             it.toSearchResult()
         }
@@ -31,14 +30,12 @@ class RebahinnProvider : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-        // 1. Cari judul. Jika tidak ada di teks <a>, coba cari di alt gambar
         val title = this.selectFirst("h3 a, .title a")?.text() 
             ?: this.selectFirst("img")?.attr("alt") 
             ?: return null
 
         val href = fixUrl(this.selectFirst("a")?.attr("href") ?: return null)
         
-        // 2. Trik Lazy Load: Cari di data-src dulu, kalau kosong baru ambil src
         val imgElement = this.selectFirst("img")
         val posterUrl = fixUrl(
             imgElement?.attr("data-src")?.ifEmpty { imgElement.attr("src") } 
@@ -76,7 +73,6 @@ class RebahinnProvider : MainAPI() {
         val isTv = url.contains("/tvseries/")
 
         if (isTv) {
-            // Ambil list episode dari elemen ul.episodios atau sejenisnya
             val episodes = document.select("ul.episodios li, .list-episodes li").mapNotNull {
                 val link = it.selectFirst("a")?.attr("href") ?: return@mapNotNull null
                 val name = it.selectFirst("a")?.text() ?: "Episode"
@@ -110,13 +106,34 @@ class RebahinnProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data).document
-        // Cari iframe player (biasanya di dalam .player-iframe atau source script)
+        
+        // --- PLAYER BARU (Deteksi hlsUrl dari script) ---
+        document.select("script").forEach { script ->
+            val text = script.data()
+            if (text.contains("var hlsUrl")) {
+                val m3u8Regex = Regex("var hlsUrl\\s*=\\s*'(.*?)'")
+                val foundUrl = m3u8Regex.find(text)?.groupValues?.get(1)
+                
+                if (!foundUrl.isNullOrBlank()) {
+                    M3u8Helper.generateM3u8(
+                        name, 
+                        foundUrl, 
+                        mainUrl
+                    ).forEach { link ->
+                        callback.invoke(link)
+                    }
+                }
+            }
+        }
+
+        // --- PLAYER LAMA (Iframe/Extractor) ---
         document.select("iframe, .dooplay_player_option").forEach { element ->
             val iframeUrl = fixUrl(element.attr("src").ifEmpty { element.attr("data-url") })
             if (iframeUrl.isNotEmpty()) {
                 loadExtractor(iframeUrl, data, subtitleCallback, callback)
             }
         }
+        
         return true
     }
 }
