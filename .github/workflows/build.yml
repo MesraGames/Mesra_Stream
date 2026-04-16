@@ -37,7 +37,7 @@ jobs:
       - name: Access Secrets
         env:
 <<<<<<< HEAD
-          BSTATION_COOKIE: ${{ secrets.BSTATION_COOKIE }}
+         BSTATION_COOKIE: ${{ secrets.BSTATION_COOKIE }}
           CRUNCHYROLL_BASIC_TOKEN: ${{ secrets.CRUNCHYROLL_BASIC_TOKEN }}
           CRUNCHYROLL_REFRESH_TOKEN: ${{ secrets.CRUNCHYROLL_REFRESH_TOKEN }}
           ANICHI_API: ${{ secrets.ANICHI_API }}
