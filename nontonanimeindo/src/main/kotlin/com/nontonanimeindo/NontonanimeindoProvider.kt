@@ -2,60 +2,54 @@ package com.nontonanimeindo
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
-import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
 import org.jsoup.nodes.Element
 
 class NontonanimeindoProvider : MainAPI() {
-    /* ======================= Variables ======================= */
     override var mainUrl = "https://nontonanimeindo.id"
     override var name = "NontonAnimeIndo"
     override val hasMainPage = true
     override var lang = "id"
-    override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
+    override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie)
 
-    /* ======================= Main Page & Search ======================= */
+    override val mainPage = mainPageOf(
+        "$mainUrl/" to "Anime Terbaru",
+        "$mainUrl/anime-ongoing/" to "Anime Ongoing",
+        "$mainUrl/anime-movie/" to "Anime Movie"
+    )
+
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get(mainUrl).document
-        val sections = document.select(".post-show").mapNotNull {
-            val title = it.selectFirst(".title-section")?.text() ?: "Update Terbaru"
-            val items = it.select("article").mapNotNull {
-                it.toSearchResult()
-            }
-            HomePageList(title, items)
-        }
-        return HomePageResponse(sections, false)
+        val document = app.get(request.data + if (page > 1) "page/$page/" else "").document
+        val items = document.select(".rel-post ul li, .post-item, .item").mapNotNull { it.toSearchResult() }
+        return newHomePageResponse(request.name, items)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
         val document = app.get("$mainUrl/?s=$query").document
-        return document.select(".listupd article").mapNotNull {
-            it.toSearchResult()
-        }
+        return document.select(".rel-post ul li, .post-item, .item").mapNotNull { it.toSearchResult() }
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-        val title = this.selectFirst(".title, .tt")?.text()?.trim() ?: return null
+        val title = this.selectFirst("h2, .title, a")?.text() ?: return null
         val href = this.selectFirst("a")?.attr("href") ?: return null
-        val posterUrl = this.selectFirst("img").fixPoster()
-
+        val posterUrl = this.selectFirst("img")?.fixPoster()
         return newAnimeSearchResponse(title, href, TvType.Anime) {
             this.posterUrl = posterUrl
         }
     }
 
-    /* ======================= Load Details & Episodes ======================= */
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
-        val title = document.selectFirst("h1.entry-title")?.text()?.trim() ?: ""
-        val poster = document.selectFirst(".thumb img").fixPoster()
-        val plot = document.selectFirst(".entry-content p")?.text()
-        
+        val title = document.selectFirst(".entry-title, h1")?.text() ?: ""
+        val poster = document.selectFirst(".thumb img, .entry-content img")?.fixPoster()
+        val plot = document.selectFirst(".entry-content p, .description")?.text()
+
         val episodes = document.select(".episodelist ul li").mapNotNull {
-            val epTitle = it.selectFirst(".epxtitle")?.text() ?: ""
-            val epHref = it.selectFirst("a")?.attr("href") ?: return@mapNotNull null
-            val date = it.selectFirst(".epxdate")?.text()
-            Episode(epHref, epTitle, date = date)
+            val a = it.selectFirst("a") ?: return@mapNotNull null
+            val epUrl = a.attr("href")
+            val epName = a.text()
+            newEpisode(epUrl) {
+                this.name = epName
+            }
         }.reversed()
 
         return newTvSeriesLoadResponse(title, url, TvType.Anime, episodes) {
@@ -64,26 +58,15 @@ class NontonanimeindoProvider : MainAPI() {
         }
     }
 
-    /* ======================= Links & Extractors ======================= */
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-        
-        document.select(".mirroroption select option").forEach { 
-            val base64Data = it.attr("value")
-            if (base64Data.isNotEmpty()) {
-                val decodedIframe = base64Data.base64Decode()
-                val iframeUrl = Regex("src=\"([^\"]+)\"").find(decodedIframe)?.groupValues?.get(1)
-                
-                if (iframeUrl != null) {
-                    loadExtractor(iframeUrl, data, subtitleCallback, callback)
-                }
-            }
+        document.select(".video-content iframe, .embed-container iframe, iframe").forEach {
+            val iframe = it.getIframeAttr() ?: return@forEach
+            loadExtractor(iframe, data, subtitleCallback, callback)
         }
-        
         return true
     }
 
-    /* ======================= Helper Functions ======================= */
     private fun Element?.fixPoster(): String? {
         if (this == null) return null
         if (this.hasAttr("srcset")) {
@@ -110,13 +93,5 @@ class NontonanimeindoProvider : MainAPI() {
 
     private fun Element?.getIframeAttr(): String? {
         return this?.attr("data-litespeed-src").takeIf { !it.isNullOrEmpty() } ?: this?.attr("src")
-    }
-
-    private fun String.base64Decode(): String {
-        return try {
-            android.util.Base64.decode(this, android.util.Base64.DEFAULT).toString(Charsets.UTF_8)
-        } catch (e: Exception) {
-            ""
-        }
     }
 }
