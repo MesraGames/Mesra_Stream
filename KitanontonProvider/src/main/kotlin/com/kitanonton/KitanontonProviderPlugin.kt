@@ -1,13 +1,12 @@
-package com.hexated
+package com.kitanonton
 
 import android.content.Context
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 
 @CloudstreamPlugin
-class IdlixProviderPlugin : Plugin() {
+class KitanontonProviderPlugin : Plugin() {
     override fun load(context: Context) {
-        registerMainAPI(IdlixProvider())
-        registerExtractorAPI(Jeniusplay())
+        registerMainAPI(KitanontonProvider())
     }
 }

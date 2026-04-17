@@ -1,21 +1,77 @@
-package com.z1
+package com.hexated
 
-import com.lagradost.cloudstream3.extractors.StreamWishExtractor
-import com.lagradost.cloudstream3.extractors.VidStack
-import com.lagradost.cloudstream3.extractors.VidhideExtractor
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.network.CloudflareKiller
+import com.lagradost.cloudstream3.newSubtitleFile
+import com.lagradost.cloudstream3.utils.AppUtils
+import com.lagradost.cloudstream3.utils.ExtractorApi
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
+import com.lagradost.cloudstream3.utils.getAndUnpack
 
-class Z1Wish : StreamWishExtractor() {
-    override var name = "Z1 Wish"
-    override var mainUrl = "https://dwish.net" // URL StreamWish yang sering digunakan
-}
+class Jeniusplay : ExtractorApi() {
+    override var name = "Jeniusplay"
+    override var mainUrl = "https://jeniusplay.com"
+    override val requiresReferer = true
+    private val cloudflareInterceptor by lazy { CloudflareKiller() }
 
-class Z1VidStack : VidStack() {
-    override var name = "Z1 Player"
-    override var mainUrl = "https://player.idlix.com" // Sesuaikan dengan subdomain pemutar idlix
-    override var requiresReferer = true
-}
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val document = app.get(url, referer = referer, interceptor = cloudflareInterceptor).document
+        val hash = url.split("/").last().substringAfter("data=")
 
-class Z1Vidhide : VidhideExtractor() {
-    override var name = "Z1 Vidhide"
-    override var mainUrl = "https://vidhidepre.com"
+        val m3uLink = app.post(
+            url = "$mainUrl/player/index.php?data=$hash&do=getVideo",
+            data = mapOf("hash" to hash, "r" to "$referer"),
+            referer = referer,
+            headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
+            interceptor = cloudflareInterceptor
+        ).parsed<ResponseSource>().videoSource.replace(".txt", ".m3u8")
+
+        generateM3u8(
+            name,
+            m3uLink,
+            mainUrl,
+        ).forEach(callback)
+
+        document.select("script").forEach { script ->
+            if (script.data().contains("eval(function(p,a,c,k,e,d)")) {
+                val subData =
+                    getAndUnpack(script.data()).substringAfter("\"tracks\":[").substringBefore("],")
+                AppUtils.tryParseJson<List<Tracks>>("[$subData]")?.map { subtitle ->
+                    subtitleCallback.invoke(
+                        newSubtitleFile(
+                            getLanguage(subtitle.label ?: ""),
+                            subtitle.file
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    data class ResponseSource(
+        @JsonProperty("hls") val hls: Boolean,
+        @JsonProperty("videoSource") val videoSource: String,
+        @JsonProperty("securedLink") val securedLink: String?,
+    )
+
+    data class Tracks(
+        @JsonProperty("kind") val kind: String?,
+        @JsonProperty("file") val file: String,
+        @JsonProperty("label") val label: String?,
+    )
+
+    private fun getLanguage(str: String): String {
+        return when {
+            str.contains("indonesia", true) || str.contains("bahasa", true) -> "Indonesian"
+            else -> str
+        }
+    }
 }
