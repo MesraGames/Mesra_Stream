@@ -1,28 +1,32 @@
 package com.nontonanimeindo
 
+import com.lagradost.cloudstream3.utils.ExtractorApi
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.extractors.*
 
-/* =========================================================================== */
-/*                    EXTRACTORS MENGGUNAKAN CLASS BAWAAN                      */
-/* =========================================================================== */
+/* =========================================================================
+   EXTRACTORS: Super Simple Class Overrides
+   ========================================================================= */
 
-class NontonAnimeVid : VidStack() {
-    override var name = "NontonAnimeVid"
+class NontonanimeindoVid : VidStack() {
+    override var name = "NontonanimeindoVid"
     override var mainUrl = "https://sub.nontonanimeindo.com"
     override var requiresReferer = true
 }
 
-class NontonAnimeWish : StreamWishExtractor() {
-    override val name = "NontonAnimeWish"
-    override val mainUrl = "https://wish.nontonanimeindo.id"
+class NontonanimeindoStreamWish : StreamWishExtractor() {
+    override var name = "NontonAnime Wish"
+    override var mainUrl = "https://streamwish.to"
 }
 
-class NontonAnimeFile : Filesim() {
-    override var name = "NontonAnimeFile"
+class NontonanimeindoFilesim : Filesim() {
+    override var name = "NontonAnime Filesim"
     override var mainUrl = "https://filesim.com"
 }
 
-class NontonAnimePlayer : Gdriveplayer() {
-    override var name = "NontonAnimePlayer"
+class NontonanimeindoGdrive : GdrivePlayer() {
+    override var name = "NontonAnime GDrive"
     override var mainUrl = "https://gdriveplayer.to"
 }

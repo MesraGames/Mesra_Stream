@@ -2,113 +2,108 @@ package com.nontonanimeindo
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
-import com.lagradost.cloudstream3.utils.ExtractorLink
 import org.jsoup.nodes.Element
 
-class NontonAnimeIndo : MainAPI() {
-    /* =========================================================================== */
-    /*                                  PROPERTIES                                 */
-    /* =========================================================================== */
+/* =========================================================================
+   PROVIDER: Nontonanimeindo
+   STYLE: Modular, Klikxxi-inspired logic
+   ========================================================================= */
+class NontonanimeindoProvider : MainAPI() {
     override var mainUrl = "https://nontonanimeindo.id"
-    override var name = "NontonAnimeIndo"
+    override var name = "Nontonanimeindo"
     override val hasMainPage = true
     override var lang = "id"
     override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie)
 
     override val mainPage = mainPageOf(
-        "/" to "Update Terbaru",
-        "/anime-terpopuler/" to "Populer",
-        "/daftar-anime-movie/" to "Anime Movie"
+        "$mainUrl/anime-terbaru/" to "Anime Terbaru",
+        "$mainUrl/anime-ongoing/" to "Anime Ongoing",
+        "$mainUrl/movie/" to "Anime Movie"
     )
 
-    /* =========================================================================== */
-    /*                               CORE FUNCTIONS                                */
-    /* =========================================================================== */
-    override suspend fun getMainPage(page: Int, request: HomePageRequest): HomePageResponse {
-        val doc = app.get("$mainUrl${request.data}page/$page/").document
-        val home = doc.select("article.animpost").mapNotNull { it.toSearchResult() }
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        val url = if (page <= 1) request.data else "${request.data}page/$page/"
+        val document = app.get(url).document
+        val home = document.select(".listupd .bs, .listupd .article").mapNotNull {
+            it.toSearchResult()
+        }
         return newHomePageResponse(request.name, home)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val doc = app.get("$mainUrl/?s=$query").document
-        return doc.select("article.animpost").mapNotNull { it.toSearchResult() }
+        val document = app.get("$mainUrl/?s=$query").document
+        return document.select(".listupd .bs").mapNotNull {
+            it.toSearchResult()
+        }
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-        val title = this.selectFirst("h4")?.text() ?: return null
-        val href = this.selectFirst("a")?.attr("href") ?: return null
-        val poster = fixPoster(this.selectFirst("img")?.attr("src") ?: "")
-        val quality = this.selectFirst(".mvic-quality")?.text() ?: ""
-
+        val title = this.selectFirst(".tt, h2")?.text()?.trim() ?: return null
+        val href = fixUrl(this.selectFirst("a")?.attr("href") ?: return null)
+        val posterUrl = fixPoster(this.selectFirst("img")?.attr("src") ?: this.selectFirst("img")?.attr("data-src"))
+        val quality = this.selectFirst(".typez")?.text() ?: ""
+        
         return newAnimeSearchResponse(title, href, TvType.Anime) {
-            this.posterUrl = poster
+            this.posterUrl = posterUrl
             addQuality(quality)
         }
     }
 
-    override suspend fun load(url: String): LoadResponse? {
-        val doc = app.get(url).document
-        val title = doc.selectFirst("h1.entry-title")?.text() ?: ""
-        val poster = fixPoster(doc.selectFirst(".thumb img")?.attr("src") ?: "")
-        val description = doc.selectFirst(".entry-content p")?.text()
-
-        // Cek apakah ini halaman series atau episode tunggal
-        val isEpisode = url.contains("/episode/")
-        val episodes = if (isEpisode) {
-            listOf(newEpisode(url) { 
-                this.name = "Episode 1"
-                this.episode = 1
-            })
-        } else {
-            doc.select(".list-episode li, .eplister li").mapNotNull { li ->
-                val epHref = li.selectFirst("a")?.attr("href") ?: return@mapNotNull null
-                val epTitle = li.selectFirst("a")?.text() ?: ""
-                val epNum = Regex("(?:E|Episode|Ep)\\s*(\\d+)").find(epTitle)?.groupValues?.get(1)?.toIntOrNull()
-                
-                newEpisode(epHref) {
-                    this.name = epTitle
-                    this.episode = epNum
-                }
-            }.reversed()
-        }
+    override suspend fun load(url: String): LoadResponse {
+        val document = app.get(url).document
+        val title = document.selectFirst("h1.entry-title")?.text()?.replace("Subtitle Indonesia", "")?.trim() ?: ""
+        val poster = fixPoster(document.selectFirst(".thumb img")?.attr("src"))
+        val plot = document.selectFirst(".entry-content p")?.text()
+        
+        val episodes = document.select(".eplister li").mapNotNull {
+            val link = it.selectFirst("a")?.attr("href") ?: return@mapNotNull null
+            val num = it.selectFirst(".epl-num")?.text() ?: ""
+            newEpisode(link) {
+                this.name = "Episode $num"
+                this.episode = num.toIntOrNull()
+            }
+        }.reversed()
 
         return newAnimeLoadResponse(title, url, TvType.Anime) {
             this.posterUrl = poster
-            this.plot = description
-            addEpisodes(if (isEpisode) NavType.OnlyEpisodes else NavType.Normal, episodes)
+            this.plot = plot
+            this.episodes = episodes
         }
     }
 
-    override suspend fun loadLinks(
-        data: String,
-        isDataJob: Boolean,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ): Boolean {
-        val doc = app.get(data).document
-        // Cari semua iframe di dalam player
-        doc.select(".player-embed iframe, #player_embed iframe, .video-content iframe").forEach { iframe ->
-            val src = getIframeAttr(iframe)
-            if (src.isNotEmpty()) {
-                loadExtractor(src, "$mainUrl/", subtitleCallback, callback)
+    override suspend fun loadLinks(data: String, isCdn: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+        val document = app.get(data).document
+        document.select("select.mirror option").forEach {
+            val iframeBase64 = it.attr("value")
+            // Website ini sering menggunakan base64 di value option
+            val decodedIframe = getIframeAttr(iframeBase64)
+            if (decodedIframe.isNotEmpty()) {
+                loadExtractor(decodedIframe, "$mainUrl/", subtitleCallback, callback)
             }
         }
+        
+        // Fallback ke iframe biasa jika tidak ada di select
+        document.select("iframe").forEach {
+            val src = it.attr("src")
+            if (src.isNotEmpty()) loadExtractor(src, "$mainUrl/", subtitleCallback, callback)
+        }
+        
         return true
     }
 
-    /* =========================================================================== */
-    /*                               HELPER FUNCTIONS                              */
-    /* =========================================================================== */
-    private fun fixPoster(url: String): String {
-        if (url.isEmpty()) return ""
-        return if (url.startsWith("//")) "https:$url" else url
+    /* ======================= HELPER FUNCTIONS ======================= */
+    private fun fixPoster(url: String?): String? {
+        if (url == null) return null
+        if (url.startsWith("data:image")) return null
+        return fixUrl(url)
     }
 
-    private fun getIframeAttr(element: Element): String {
-        return element.attr("src").takeIf { it.isNotEmpty() } 
-            ?: element.attr("data-src").takeIf { it.isNotEmpty() } 
-            ?: ""
+    private fun getIframeAttr(data: String): String {
+        return try {
+            if (data.startsWith("http")) data
+            else base64Decode(data)
+        } catch (e: Exception) {
+            ""
+        }
     }
 }
