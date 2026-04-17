@@ -2,50 +2,50 @@ package com.nontonanimeindo
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.extractors.VidStack
 import org.jsoup.nodes.Element
+import com.lagradost.cloudstream3.extractors.VidStack
 
 class NontonanimeindoProvider : MainAPI() {
-    /* ======================= Variables ======================= */
     override var mainUrl = "https://nontonanimeindo.id"
     override var name = "NontonAnimeIndo"
     override val hasMainPage = true
-    override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie)
+    override var lang = "id"
+    override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.TvSeries, TvType.AsianDrama)
 
-    /* ======================= Main Page & Search ======================= */
+    override val mainPage = mainPageOf(
+        "$mainUrl/anime-terbaru/page/" to "Anime Terbaru",
+        "$mainUrl/anime-movie/page/" to "Movie",
+        "$mainUrl/daftar-anime-lengkap/page/" to "Daftar Anime"
+    )
+
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get(mainUrl).document
-        val items = document.select(".listupd .bs").mapNotNull { it.toSearchResult() }
-        return newHomePageResponse(request.name, items)
+        val document = app.get(request.data + page).document
+        val home = document.select("div.animepost, article.bs, article.item, div.post-item, div.result-item, div.item, div.venz, .video-block").mapNotNull { it.toSearchResult() }
+        return newHomePageResponse(request.name, home)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
         val document = app.get("$mainUrl/?s=$query").document
-        return document.select(".listupd .bs").mapNotNull { it.toSearchResult() }
+        return document.select("div.animepost, article.bs, article.item, div.post-item, div.result-item, div.item, div.venz, .video-block").mapNotNull { it.toSearchResult() }
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-        val title = this.selectFirst(".tt")?.text() ?: return null
+        val title = this.selectFirst("h2, h3, h4, .title, .tt h4, .post-title, [itemprop=name]")?.text()?.trim() ?: return null
         val href = fixUrl(this.selectFirst("a")?.attr("href") ?: return null)
         val posterUrl = this.selectFirst("img")?.fixPoster()
-        return newAnimeSearchResponse(title, href, TvType.Anime) {
-            this.posterUrl = posterUrl
-        }
+        return newAnimeSearchResponse(title, href, TvType.Anime) { this.posterUrl = posterUrl }
     }
 
-    /* ======================= Load Details & Episodes ======================= */
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
-        val title = document.selectFirst(".entry-title")?.text() ?: ""
-        val poster = document.selectFirst(".thumb img")?.fixPoster()
-        val description = document.selectFirst(".entry-content")?.text()
-
-        val episodes = document.select(".eplister li").map {
-            val epUrl = fixUrl(it.selectFirst("a")?.attr("href") ?: "")
-            val epName = it.selectFirst(".epl-num")?.text() ?: ""
-            newEpisode(epUrl) {
-                this.name = epName
-            }
+        val title = document.selectFirst("h1.entry-title, .entry-title, .title, [itemprop=name]")?.text()?.trim() ?: ""
+        val poster = document.selectFirst("div.thumb img, .poster img, img[itemprop=image]")?.fixPoster()
+        val description = document.selectFirst("div.entry-content, .description, .entry-content p, [itemprop=description]")?.text()
+        
+        val episodes = document.select("div.eplister li, div.episodelist ul li, ul.episodes li, .ep-item").mapNotNull {
+            val href = fixUrl(it.selectFirst("a")?.attr("href") ?: return@mapNotNull null)
+            val name = it.selectFirst(".epl-num, .ep-num, .num")?.text() ?: it.selectFirst("a")?.text() ?: "Episode"
+            newEpisode(href) { this.name = name }
         }.reversed()
 
         return newTvSeriesLoadResponse(title, url, TvType.Anime, episodes) {
@@ -54,44 +54,27 @@ class NontonanimeindoProvider : MainAPI() {
         }
     }
 
-    /* ======================= Links & Extractors ======================= */
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-        document.select(".mirror option").forEach {
-            val iframeUrl = it.attr("value")
-            if (iframeUrl.isNotBlank()) {
-                loadExtractor(fixUrl(iframeUrl), data, subtitleCallback, callback)
+        document.select("ul#player-list a, .server-list a, .mirror_link a, .btn-server, .list-server li").forEach {
+            val baseUrl = it.attr("data-url").takeIf { d -> d.isNotEmpty() } ?: it.attr("href")
+            if (baseUrl.startsWith("http")) {
+                loadExtractor(fixUrl(baseUrl), subtitleCallback, callback)
             }
+        }
+        document.select("iframe, .video-content iframe").forEach {
+            val src = it.getIframeAttr() ?: return@forEach
+            loadExtractor(fixUrl(src), subtitleCallback, callback)
         }
         return true
     }
 
-    /* ======================= Helper Functions ======================= */
     private fun Element?.fixPoster(): String? {
         if (this == null) return null
-        if (this.hasAttr("srcset")) {
-            val srcset = this.attr("srcset").trim()
-            val best = srcset.split(",").map { it.trim().split(" ")[0] }.lastOrNull()
-            if (!best.isNullOrBlank()) return fixUrl(best.fixImageQuality())
-        }
-        val dataSrc = when {
-            this.hasAttr("data-lazy-src") -> this.attr("data-lazy-src")
-            this.hasAttr("data-src") -> this.attr("data-src")
-            else -> null
-        }
-        if (!dataSrc.isNullOrBlank()) return fixUrl(dataSrc.fixImageQuality())
-        val src = this.attr("src")
-        if (!src.isNullOrBlank()) return fixUrl(src.fixImageQuality())
-        return null
+        val dataSrc = this.attr("data-lazy-src").takeIf { it.isNotEmpty() } ?: this.attr("data-src").takeIf { it.isNotEmpty() } ?: this.attr("src")
+        if (dataSrc.isBlank()) return null
+        return fixUrl(dataSrc).replace(Regex("-\\d+x\\d+(?=\\.(webp|jpg|jpeg|png))"), "")
     }
 
-    private fun String?.fixImageQuality(): String {
-        if (this == null) return ""
-        val regex = Regex("-\\d+x\\d+(?=\\.(webp|jpg|jpeg|png))", RegexOption.IGNORE_CASE)
-        return this.replace(regex, "")
-    }
-
-    private fun Element?.getIframeAttr(): String? {
-        return this?.attr("data-litespeed-src").takeIf { !it.isNullOrEmpty() } ?: this?.attr("src")
-    }
+    private fun Element?.getIframeAttr(): String? = this?.attr("data-litespeed-src").takeIf { !it.isNullOrEmpty() } ?: this?.attr("src")
 }

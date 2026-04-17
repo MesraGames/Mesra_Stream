@@ -24,5 +24,5 @@ cloudstream {
 }
 
 dependencies {
-    // Dependensi standar sudah dihandle oleh core
+    // Dependensi standar otomatis ditangani
 }
