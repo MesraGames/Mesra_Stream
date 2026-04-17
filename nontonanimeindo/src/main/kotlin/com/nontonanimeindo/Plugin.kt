@@ -1,20 +1,18 @@
 package com.nontonanimeindo
 
-import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
-import com.lagradost.cloudstream3.plugins.Plugin
+import com.lagradost.cloudstream3.Plugin
+import com.lagradost.cloudstream3.CloudstreamAPI
 import android.content.Context
-import com.lagradost.cloudstream3.extractors.StreamWishExtractor
-import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 
-@CloudstreamPlugin
-class NontonAnimeIndoPlugin : Plugin() {
+class NontonAnimePlugin : Plugin() {
     override fun load(context: Context) {
-        // Registrasi API utama
-        registerMainAPI(NontonAnimeIndoProvider())
+        // Register the main provider
+        registerMainAPI(NontonAnimeIndo())
         
-        // Registrasi Extractor kustom dan bawaan yang sering digunakan target
-        registerExtractorAPI(NontonAnimeIndoExtractor())
-        registerExtractorAPI(StreamWishExtractor())
-        registerExtractorAPI(DoodLaExtractor())
+        // Register the simple extractors
+        registerExtractorAPI(NontonAnimeVid())
+        registerExtractorAPI(NontonAnimeWish())
+        registerExtractorAPI(NontonAnimeFile())
+        registerExtractorAPI(NontonAnimePlayer())
     }
 }

@@ -7,7 +7,7 @@ version = 1
 cloudstream {
     description = "Nontonanimeindo Provider"
     language = "id"
-    authors = listOf("RavenX")
+    authors = listOf("Cloudstream AI")
 
     /**
      * Status: 1 (Ok)
