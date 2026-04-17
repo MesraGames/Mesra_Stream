@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.getAndUnpack
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType // IMPORT BARU YANG WAJIB
 
 class NontonAnimeIndoExtractor : ExtractorApi() {
     override var name = "NAI-Aggressive"
@@ -34,16 +35,12 @@ class NontonAnimeIndoExtractor : ExtractorApi() {
                 )
                 extractedLinks.addAll(links)
             } else {
-                // Memperbaiki constructor ExtractorLink yang deprecated
+                // MEMPERBAIKI FORMAT NEW EXTRACTOR LINK
                 extractedLinks.add(
-                    newExtractorLink(
-                        name, 
-                        name, 
-                        source, 
-                        referer ?: "", 
-                        Qualities.Unknown.value, 
-                        false
-                    )
+                    newExtractorLink(name, name, source, ExtractorLinkType.VIDEO) {
+                        this.referer = referer ?: ""
+                        this.quality = Qualities.Unknown.value
+                    }
                 )
             }
         }

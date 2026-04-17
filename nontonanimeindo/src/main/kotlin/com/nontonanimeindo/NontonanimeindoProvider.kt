@@ -30,7 +30,6 @@ class NontonAnimeIndoProvider : MainAPI() {
         val title = doc.selectFirst("h1.entry-title")?.text() ?: ""
         val poster = doc.selectFirst("div.thumb img")?.getImageAttr() ?: doc.selectFirst("meta[property=og:image]")?.attr("content")
         
-        // Memperbaiki fungsi newEpisode yang deprecated
         val episodes = doc.select("div.episodelist ul li").mapNotNull {
             val name = it.selectFirst("span.eps a")?.text() ?: ""
             val href = it.selectFirst("span.eps a")?.attr("href") ?: return@mapNotNull null
@@ -41,12 +40,10 @@ class NontonAnimeIndoProvider : MainAPI() {
 
         return newAnimeLoadResponse(title, url, TvType.Anime) {
             this.posterUrl = poster
-            // Memperbaiki error MutableMap saat memasukkan daftar episode
             addEpisodes(DubStatus.Subbed, episodes)
         }
     }
 
-    // Memperbaiki error signature overrides nothing dengan menambahkan subtitleCallback
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -55,7 +52,6 @@ class NontonAnimeIndoProvider : MainAPI() {
     ): Boolean {
         val doc = app.get(data).document
         
-        // 1. Ekstraksi agresif dari elemen UI
         doc.select("ul#server_list li div, .player-embed iframe, div[data-link], li[data-video]").forEach { el ->
             val link = el.attr("data-link").ifEmpty { el.attr("data-src") }.ifEmpty { el.attr("data-video") }.ifEmpty { el.attr("src") }
             if (link.isNotEmpty()) {
@@ -63,11 +59,9 @@ class NontonAnimeIndoProvider : MainAPI() {
             }
         }
 
-        // 2. Ekstraksi agresif dari Script block
         doc.select("script").forEach { script ->
             val content = script.data()
             if (content.contains("base64") || content.contains("eval")) {
-                // Memperbaiki Regex Syntax Error pada Base64
                 Regex("\"([A-Za-z0-9+/]{40,}=*)\"").findAll(content).forEach { match ->
                     try {
                         val decoded = String(Base64.decode(match.groupValues[1], Base64.DEFAULT), StandardCharsets.UTF_8)
@@ -76,20 +70,15 @@ class NontonAnimeIndoProvider : MainAPI() {
                 }
             }
             
-            // Scrape direct video sources
             Regex("(?i)(?:file|hls|src|url)\\s*[:=]\\s*[\"']([^\"']+\\.(?:m3u8|mp4)[^\"']*)[\"']").findAll(content).forEach { match ->
                 val videoUrl = match.groupValues[1]
                 try { 
-                    // Memperbaiki ExtractorLink constructor yang deprecated ke newExtractorLink
+                    // MEMPERBAIKI FORMAT NEW EXTRACTOR LINK
+                    val linkType = if (videoUrl.contains("m3u8")) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
                     callback.invoke(
-                        newExtractorLink(
-                            "Internal Player", 
-                            "High Speed", 
-                            videoUrl, 
-                            "", 
-                            Qualities.Unknown.value, 
-                            videoUrl.contains("m3u8")
-                        )
+                        newExtractorLink("Internal Player", "High Speed", videoUrl, linkType) {
+                            this.quality = Qualities.Unknown.value
+                        }
                     )
                 } catch (e: Exception) { }
             }
@@ -97,7 +86,6 @@ class NontonAnimeIndoProvider : MainAPI() {
         return true
     }
 
-    // Parameter di-update untuk menerima subtitleCallback
     private suspend fun processVideoUrl(url: String, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit) {
         val cleanUrl = if (url.startsWith("//")) "https:$url" else url
         loadExtractor(cleanUrl, mainUrl, subtitleCallback, callback)
