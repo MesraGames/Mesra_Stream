@@ -2,10 +2,9 @@ package com.rebahinn
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.ExtractorLinkType.Companion.INFER_TYPE
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.base64Decode
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.Qualities
 
 class RebahinnProvider : MainAPI() {
     override var mainUrl = "https://www.rebahinn.net"
@@ -20,7 +19,7 @@ class RebahinnProvider : MainAPI() {
         "/movies/" to "Movie"
     )
 
-    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse { 
         val path = request.data
         val urlPath = if (path.isEmpty() || path == "/") {
             if (page == 1) mainUrl else "$mainUrl/page/$page/"
@@ -40,7 +39,7 @@ class RebahinnProvider : MainAPI() {
         return newHomePageResponse(request.name, home.distinctBy { it.url })
     }
     
-    override suspend fun search(query: String): List<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse> { 
         val document = app.get("$mainUrl/?s=$query").document
         var results = document.select("div.animepost, article.bs, article.item, div.post-item, div.result-item, div.item, div.venz, .video-block, ul.latest li, div.excstf article, .flw-item").mapNotNull { it.toSearchResult() }
         
@@ -50,7 +49,7 @@ class RebahinnProvider : MainAPI() {
         return results.distinctBy { it.url }
     }
     
-    private fun Element.toSearchResult(): SearchResponse? {
+    private fun Element.toSearchResult(): SearchResponse? { 
         val aTag = if (this.tagName() == "a") this else this.selectFirst("a")
         val href = fixUrlNull(aTag?.attr("href")) ?: return null
         if (href.contains("javascript:") || href.contains("login") || href.contains("register")) return null
@@ -131,14 +130,14 @@ class RebahinnProvider : MainAPI() {
         Regex("(https?:\\/\\/[^\"']+\\.(?:m3u8|mp4))").findAll(htmlRaw).forEach { match ->
             val vidUrl = match.groupValues[1]
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     this.name,
                     this.name,
                     vidUrl,
-                    "",
-                    Qualities.Unknown.value,
-                    if (vidUrl.contains(".m3u8")) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
-                )
+                    type = if (vidUrl.contains(".m3u8")) INFER_TYPE else ExtractorLinkType.VIDEO
+                ) { 
+                    this.quality = Qualities.Unknown.value
+                }
             )
         }
         return true
@@ -151,12 +150,21 @@ class RebahinnProvider : MainAPI() {
             val best = srcset.split(",").map { it.trim().split(" ")[0] }.lastOrNull()
             if (!best.isNullOrBlank()) return fixUrl(best.fixImageQuality())
         }
-        val dataSrc = this.attr("data-lazy-src").takeIf { it.isNotBlank() } ?: this.attr("data-src").takeIf { it.isNotBlank() } ?: this.attr("src")
-        return if (!dataSrc.isNullOrBlank()) fixUrl(dataSrc.fixImageQuality()) else null
+        val dataSrc = when {
+            this.hasAttr("data-lazy-src") -> this.attr("data-lazy-src")
+            this.hasAttr("data-src") -> this.attr("data-src")
+            else -> null
+        }
+        if (!dataSrc.isNullOrBlank()) return fixUrl(dataSrc.fixImageQuality())
+        val src = this.attr("src")
+        if (!src.isNullOrBlank()) return fixUrl(src.fixImageQuality())
+        return null
     }
 
-    private fun String.fixImageQuality(): String {
-        return this.replace(Regex("-\\d+x\\d+(?=\\.(webp|jpg|jpeg|png))", RegexOption.IGNORE_CASE), "")
+    private fun String?.fixImageQuality(): String {
+        if (this == null) return ""
+        val regex = Regex("-\\d+x\\d+(?=\\.(webp|jpg|jpeg|png))", RegexOption.IGNORE_CASE)
+        return this.replace(regex, "")
     }
 
     private fun Element?.getIframeAttr(): String? {
