@@ -5,10 +5,10 @@ import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
 
 @CloudstreamPlugin
-class NontonanimeindoPlugin : Plugin() {
+class NontonanimeindoPlugin: Plugin() {
     override fun load(context: Context) {
         registerMainAPI(NontonanimeindoProvider())
-        registerExtractorAPI(NontonanimeindoVidStack())
-        registerExtractorAPI(NontonanimeindoStreamWish())
+        registerExtractorAPI(VidStackExtractor())
+        registerExtractorAPI(MyStreamWish())
     }
 }
