@@ -7,14 +7,8 @@ import android.content.Context
 @CloudstreamPlugin
 class RebahinnPlugin: Plugin() {
     override fun load(context: Context) {
-        // Daftar Provider Utama
         registerMainAPI(RebahinnProvider())
-        
-        // Daftar Semua Mesin (Extractor) dari Extractor.kt
-        registerExtractorAPI(DingtezuniExtractor())
-        registerExtractorAPI(RebahinStreamWish())
-        registerExtractorAPI(RebahinVidstack())
-        registerExtractorAPI(RebahinHxfile())
-        registerExtractorAPI(RebahinDood())
+        registerExtractorAPI(VidstackExtractor())
+        registerExtractorAPI(StreamwishExtractor())
     }
 }

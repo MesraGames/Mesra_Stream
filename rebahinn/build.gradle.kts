@@ -10,11 +10,7 @@ cloudstream {
     authors = listOf("Cloudstream AI")
 
     /**
-     * Status int as the following:
-     * 0: Down
-     * 1: Ok
-     * 2: Slow
-     * 3: Beta only
+     * Status: 1 (Ok)
      * */
     status = 1
     tvTypes = listOf(
@@ -28,5 +24,5 @@ cloudstream {
 }
 
 dependencies {
-    // Tambahkan dependensi khusus ekstensi di sini jika diperlukan
+    // Dependensi standar otomatis ditangani
 }
