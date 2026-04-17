@@ -4,6 +4,8 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.Qualities
 
 class RebahinnProvider : MainAPI() {
     override var mainUrl = "https://www.rebahinn.net"
@@ -134,8 +136,8 @@ class RebahinnProvider : MainAPI() {
                     this.name,
                     vidUrl,
                     "",
-                    if (vidUrl.contains(".m3u8")) INFER_TYPE else ExtractorLinkType.VIDEO,
-                    listOf(Qualities.Unknown.value)
+                    Qualities.Unknown.value,
+                    if (vidUrl.contains(".m3u8")) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
                 )
             )
         }
@@ -149,21 +151,12 @@ class RebahinnProvider : MainAPI() {
             val best = srcset.split(",").map { it.trim().split(" ")[0] }.lastOrNull()
             if (!best.isNullOrBlank()) return fixUrl(best.fixImageQuality())
         }
-        val dataSrc = when {
-            this.hasAttr("data-lazy-src") -> this.attr("data-lazy-src")
-            this.hasAttr("data-src") -> this.attr("data-src")
-            else -> null
-        }
-        if (!dataSrc.isNullOrBlank()) return fixUrl(dataSrc.fixImageQuality())
-        val src = this.attr("src")
-        if (!src.isNullOrBlank()) return fixUrl(src.fixImageQuality())
-        return null
+        val dataSrc = this.attr("data-lazy-src").takeIf { it.isNotBlank() } ?: this.attr("data-src").takeIf { it.isNotBlank() } ?: this.attr("src")
+        return if (!dataSrc.isNullOrBlank()) fixUrl(dataSrc.fixImageQuality()) else null
     }
 
-    private fun String?.fixImageQuality(): String {
-        if (this == null) return ""
-        val regex = Regex("-\\d+x\\d+(?=\\.(webp|jpg|jpeg|png))", RegexOption.IGNORE_CASE)
-        return this.replace(regex, "")
+    private fun String.fixImageQuality(): String {
+        return this.replace(Regex("-\\d+x\\d+(?=\\.(webp|jpg|jpeg|png))", RegexOption.IGNORE_CASE), "")
     }
 
     private fun Element?.getIframeAttr(): String? {

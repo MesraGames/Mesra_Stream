@@ -8,7 +8,6 @@ import android.content.Context
 class RebahinnPlugin: Plugin() {
     override fun load(context: Context) {
         registerMainAPI(RebahinnProvider())
-        registerExtractorAPI(VidStackExtractor())
-        registerExtractorAPI(StreamWish())
+        registerExtractorAPI(RebahinnExtractor())
     }
 }

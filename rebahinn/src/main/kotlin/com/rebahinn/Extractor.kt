@@ -1,12 +1,8 @@
 package com.rebahinn
 
-import com.lagradost.cloudstream3.utils.VidStack
-import com.lagradost.cloudstream3.extractors.StreamWishExtractor
+import com.lagradost.cloudstream3.extractors.Filesim
 
-class VidStackExtractor : VidStack() { 
-    override val name = "VidStack"
-}
-
-class StreamWish : StreamWishExtractor() {
-    override var name = "StreamWish"
+class RebahinnExtractor : Filesim() {
+    override var name = "Filesim"
+    override var mainUrl = "https://filesim.com"
 }
