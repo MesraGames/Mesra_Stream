@@ -1,17 +1,14 @@
 package com.nontonanimeindo
-import com.lagradost.cloudstream3.utils.ExtractorApi
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.INFER_TYPE
-import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.cloudstream3.extractors.*
 
-class NontonVid : VidStack() {
-    override var name = "NontonVid"
-    override var mainUrl = "https://sub.nontonanimeindo.com"
-    override var requiresReferer = true
+import com.lagradost.cloudstream3.extractors.StreamWishExtractor
+import com.lagradost.cloudstream3.extractors.Vidstack
+
+class NontonAnimeIndoStreamWish : StreamWishExtractor() {
+    override var name = "StreamWish"
+    override var mainUrl = "https://streamwish.to"
 }
 
-class NontonFile : Filesim() {
-    override val name = "NontonFile"
-    override var mainUrl = "https://file.nontonanimeindo.com"
+class NontonAnimeIndoVidstack : Vidstack() {
+    override var name = "Vidstack"
+    override var mainUrl = "https://vidstack.icu"
 }
