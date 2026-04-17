@@ -3,6 +3,7 @@ package com.rebahinn
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Element
+import com.lagradost.cloudstream3.base64Decode
 
 class RebahinnProvider : MainAPI() {
     override var mainUrl = "https://www.rebahinn.net"
@@ -17,7 +18,7 @@ class RebahinnProvider : MainAPI() {
         "/movies/" to "Movie"
     )
 
-    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse { 
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val path = request.data
         val urlPath = if (path.isEmpty() || path == "/") {
             if (page == 1) mainUrl else "$mainUrl/page/$page/"
@@ -37,7 +38,7 @@ class RebahinnProvider : MainAPI() {
         return newHomePageResponse(request.name, home.distinctBy { it.url })
     }
     
-    override suspend fun search(query: String): List<SearchResponse> { 
+    override suspend fun search(query: String): List<SearchResponse> {
         val document = app.get("$mainUrl/?s=$query").document
         var results = document.select("div.animepost, article.bs, article.item, div.post-item, div.result-item, div.item, div.venz, .video-block, ul.latest li, div.excstf article, .flw-item").mapNotNull { it.toSearchResult() }
         
@@ -47,7 +48,7 @@ class RebahinnProvider : MainAPI() {
         return results.distinctBy { it.url }
     }
     
-    private fun Element.toSearchResult(): SearchResponse? { 
+    private fun Element.toSearchResult(): SearchResponse? {
         val aTag = if (this.tagName() == "a") this else this.selectFirst("a")
         val href = fixUrlNull(aTag?.attr("href")) ?: return null
         if (href.contains("javascript:") || href.contains("login") || href.contains("register")) return null
@@ -71,31 +72,72 @@ class RebahinnProvider : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val doc = app.get(url).document
-        val title = doc.selectFirst("h1, .entry-title")?.text()?.trim() ?: ""
-        val poster = doc.selectFirst("img.wp-post-image, .thumb img")?.fixPoster()
-        val isTv = url.contains("/series/") || url.contains("/tv/") || doc.select(".eplister").isNotEmpty()
+        val title = doc.selectFirst("h1, h2.entry-title, .infox h1")?.text() ?: "Title"
+        val poster = doc.selectFirst("div.thumb img, .poster img")?.fixPoster()
+        val plot = doc.selectFirst(".entry-content, .desc, .sinopsis")?.text()
+        val isAnime = url.contains("anime") || doc.select("div.eplister").isNotEmpty()
         
-        return if (isTv) {
-            val episodes = doc.select(".eplister li a, .list-episode li a").map {
-                newEpisode(it.attr("href")) {
-                    name = it.selectFirst(".epl-num")?.text() ?: it.text()
-                }
+        if (isAnime) {
+            val episodes = mutableListOf<Episode>()
+            doc.select("div.eplister li a, div.episodelist ul li a, ul.episodes li a").forEachIndexed { index, element ->
+                val epHref = element.attr("href")
+                val epTitle = element.selectFirst(".epl-title, .epl-num")?.text() ?: "Episode ${index + 1}"
+                episodes.add(newEpisode(epHref) { this.name = epTitle })
             }
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+            if(episodes.isEmpty()) {
+                episodes.add(newEpisode(url) { this.name = "Nonton" })
+            }
+            return newTvSeriesLoadResponse(title, url, TvType.Anime, episodes.reversed()) {
                 this.posterUrl = poster
+                this.plot = plot
             }
         } else {
-            newMovieLoadResponse(title, url, TvType.Movie, url) {
+            return newMovieLoadResponse(title, url, TvType.Movie, url) {
                 this.posterUrl = poster
+                this.plot = plot
             }
         }
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val doc = app.get(data).document
-        doc.select("iframe, .video-content iframe").forEach { iframe ->
-            val src = iframe.getIframeAttr() ?: return@forEach
-            loadExtractor(src, data, subtitleCallback, callback)
+        val document = app.get(data).document
+        val htmlRaw = document.html()
+
+        document.select("iframe").forEach { iframe ->
+            val src = iframe.getIframeAttr()
+            if (!src.isNullOrBlank()) {
+                loadExtractor(fixUrl(src), data, subtitleCallback, callback)
+            }
+        }
+
+        document.select(".server-list a, ul#player-list a, .mirror_link a, .btn-server, .play-btn, [data-video], [data-src], [data-link]").forEach { element ->
+            var link = element.attr("href").takeIf { it.isNotBlank() && it != "#" }
+                ?: element.attr("data-video").takeIf { it.isNotBlank() }
+                ?: element.attr("data-src").takeIf { it.isNotBlank() }
+                ?: element.attr("data-link")
+
+            if (link != null) {
+                if (!link.startsWith("http") && !link.startsWith("//") && link.length > 20) {
+                    try { link = base64Decode(link) } catch (e: Exception) { }
+                }
+                if (link.isNotBlank() && link.startsWith("http")) {
+                    loadExtractor(fixUrl(link), data, subtitleCallback, callback)
+                }
+            }
+        }
+
+        Regex("(https?:\\/\\/[^\"']+\\.(?:m3u8|mp4))").findAll(htmlRaw).forEach { match ->
+            val vidUrl = match.groupValues[1]
+            callback.invoke(
+                ExtractorLink(
+                    this.name,
+                    this.name,
+                    vidUrl,
+                    "",
+                    if (vidUrl.contains(".m3u8")) INFER_TYPE else ExtractorLinkType.VIDEO,
+                    listOf(Qualities.Unknown.value)
+                )
+            )
         }
         return true
     }
