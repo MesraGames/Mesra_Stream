@@ -8,7 +8,7 @@ import android.content.Context
 class NontonanimeindoPlugin: Plugin() {
     override fun load(context: Context) {
         registerMainAPI(NontonanimeindoProvider())
-        registerExtractorAPI(NontonAnimeVidStack())
-        registerExtractorAPI(NontonAnimeStreamWish())
+        registerExtractorAPI(VidStackIndo())
+        registerExtractorAPI(StreamWishIndo())
     }
 }
