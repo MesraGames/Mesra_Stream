@@ -2,13 +2,12 @@ package com.rebahinn
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.ExtractorLinkType.Companion.INFER_TYPE
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.base64Decode
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.utils.INFER_TYPE
 
 class RebahinnProvider : MainAPI() {
-    override var mainUrl = "https://rebahinn.net"
+    override var mainUrl = "https://www.rebahinn.net"
     override var name = "Rebahinn"
     override val hasMainPage = true
     override var lang = "id"
@@ -20,7 +19,7 @@ class RebahinnProvider : MainAPI() {
         "/movies/" to "Movie"
     )
 
-    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse { 
         val path = request.data
         val urlPath = if (path.isEmpty() || path == "/") {
             if (page == 1) mainUrl else "$mainUrl/page/$page/"
@@ -40,7 +39,7 @@ class RebahinnProvider : MainAPI() {
         return newHomePageResponse(request.name, home.distinctBy { it.url })
     }
     
-    override suspend fun search(query: String): List<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse> { 
         val document = app.get("$mainUrl/?s=$query").document
         var results = document.select("div.animepost, article.bs, article.item, div.post-item, div.result-item, div.item, div.venz, .video-block, ul.latest li, div.excstf article, .flw-item").mapNotNull { it.toSearchResult() }
         
@@ -50,7 +49,7 @@ class RebahinnProvider : MainAPI() {
         return results.distinctBy { it.url }
     }
     
-    private fun Element.toSearchResult(): SearchResponse? {
+    private fun Element.toSearchResult(): SearchResponse? { 
         val aTag = if (this.tagName() == "a") this else this.selectFirst("a")
         val href = fixUrlNull(aTag?.attr("href")) ?: return null
         if (href.contains("javascript:") || href.contains("login") || href.contains("register")) return null
@@ -130,8 +129,16 @@ class RebahinnProvider : MainAPI() {
 
         Regex("(https?:\\/\\/[^\"']+\\.(?:m3u8|mp4))").findAll(htmlRaw).forEach { match ->
             val vidUrl = match.groupValues[1]
-            val type = if (vidUrl.contains(".m3u8")) INFER_TYPE else ExtractorLinkType.VIDEO
-            newExtractorLink(this.name, this.name, vidUrl, type, callback)
+            callback.invoke(
+                newExtractorLink(
+                    this.name,
+                    this.name,
+                    vidUrl,
+                    type = if (vidUrl.contains(".m3u8")) INFER_TYPE else ExtractorLinkType.VIDEO
+                ) { 
+                    this.quality = Qualities.Unknown.value
+                }
+            )
         }
         return true
     }

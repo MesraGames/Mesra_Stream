@@ -1,7 +1,7 @@
 {
     "name": "Berbagi Itu Indah",
     "description": "Cloudstream extensions collection",
-    "iconUrl": "https://github.com/MesraGames/Mesra_Stream/blob/main/Raven_X%20Logo.png",
+    "iconUrl": "https://id.wikipedia.org/wiki/SpongeBob_SquarePants_%28karakter%29#/media/Berkas:Spongebob-squarepants.png",
     "manifestVersion": 1,
     "pluginLists": [
       "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/plugins.json"
