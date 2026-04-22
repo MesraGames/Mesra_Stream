@@ -693,20 +693,6 @@
         "name": "MovieBoxProvider"
     },
     {
-        "fileHash": "sha256-63ece47deecde2d17ca7b6d8c09fa88a8030112addb4e0f70d42812fad0b12b1",
-        "apiVersion": 1,
-        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 12648,
-        "status": 3,
-        "authors": [
-            "duro92"
-        ],
-        "version": -1,
-        "internalName": "napus",
-        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/napus.cs3",
-        "name": "napus"
-    },
-    {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://new18.ngefilm.site&size=%size%",
         "fileHash": "sha256-adbe04e1f790f3e96cbe1b6693cd0928889bdfbbf3cc6f5419f8527de1b3fb73",
         "apiVersion": 1,
