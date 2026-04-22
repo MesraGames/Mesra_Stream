@@ -2,12 +2,14 @@ package com.rebahinn
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.utils.ExtractorLinkType.Companion.INFER_TYPE
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.INFER_TYPE
 
 class RebahinnProvider : MainAPI() {
-    override var mainUrl = "https://www.rebahinn.net"
+    override var mainUrl = "https://rebahinn.net"
     override var name = "Rebahinn"
     override val hasMainPage = true
     override var lang = "id"
@@ -134,10 +136,10 @@ class RebahinnProvider : MainAPI() {
                     this.name,
                     this.name,
                     vidUrl,
+                    "",
+                    Qualities.Unknown.value,
                     type = if (vidUrl.contains(".m3u8")) INFER_TYPE else ExtractorLinkType.VIDEO
-                ) { 
-                    this.quality = Qualities.Unknown.value
-                }
+                )
             )
         }
         return true

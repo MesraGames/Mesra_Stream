@@ -1,9 +1,9 @@
 package com.rebahinn
 
-import com.lagradost.cloudstream3.utils.Filesim
+import com.lagradost.cloudstream3.utils.ExtractorApi
 
-class RebahinnExtractor : Filesim() {
-    override val name = "RebahinnExtractor"
-    override val mainUrl = "https://rebahinn.net"
-    override val requiresReferer = true
+class RebahinnExtractor : ExtractorApi() {
+    override var name = "Rebahinn"
+    override var mainUrl = "https://rebahinn.com"
+    override val requiresReferer = false
 }
