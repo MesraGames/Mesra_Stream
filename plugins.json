@@ -715,6 +715,29 @@
         "name": "Ngefilm"
     },
     {
+        "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://nimegami.id&size=%size%",
+        "fileHash": "sha256-32f257198111cebab26bf29b638caecf0bd3b44d4cc9f439c5cc6a623724006d",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 16906,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "Raven_X"
+        ],
+        "tvTypes": [
+            "TvSeries",
+            "Movie",
+            "Anime",
+            "AsianDrama"
+        ],
+        "version": 1,
+        "internalName": "nimegami",
+        "description": "Nimegami Auto Provider",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/nimegami.cs3",
+        "name": "nimegami"
+    },
+    {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://nomat.site&size=%size%",
         "fileHash": "sha256-1bb987add854edc2f61320a57d3547bd5d60073686cb3fd11e2d872996452520",
         "apiVersion": 1,
