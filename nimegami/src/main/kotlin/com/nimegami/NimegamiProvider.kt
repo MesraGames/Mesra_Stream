@@ -1,4 +1,4 @@
-package com.rebahinn
+package com.nimegami
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -7,17 +7,18 @@ import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 
-class RebahinnProvider : MainAPI() {
-    override var mainUrl = "https://rebahinn.net"
-    override var name = "Rebahinn"
+class NimegamiProvider : MainAPI() {
+    override var mainUrl = "https://nimegami.id"
+    override var name = "Nimegami"
     override val hasMainPage = true
     override var lang = "id"
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.Anime, TvType.AsianDrama)
-    
+
     override val mainPage = mainPageOf(
         "" to "Terbaru",
         "/anime/" to "Anime",
-        "/movies/" to "Movie"
+        "/movies/" to "Movie",
+        "/series/" to "Series"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -29,32 +30,32 @@ class RebahinnProvider : MainAPI() {
         } else {
             if (page == 1) "$mainUrl$path" else "$mainUrl${path.removeSuffix("/")}/page/$page/"
         }
-        
+
         val document = app.get(urlPath).document
         var home = document.select("div.animepost, article.bs, article.item, div.post-item, div.result-item, div.item, div.venz, .video-block, ul.latest li, div.excstf article, .flw-item").mapNotNull { it.toSearchResult() }
-        
+
         if (home.isEmpty()) {
             home = document.select("a").filter { it.selectFirst("img") != null && it.attr("href").length > 5 }.mapNotNull { it.toSearchResult() }
         }
 
         return newHomePageResponse(request.name, home.distinctBy { it.url })
     }
-    
+
     override suspend fun search(query: String): List<SearchResponse> {
         val document = app.get("$mainUrl/?s=$query").document
         var results = document.select("div.animepost, article.bs, article.item, div.post-item, div.result-item, div.item, div.venz, .video-block, ul.latest li, div.excstf article, .flw-item").mapNotNull { it.toSearchResult() }
-        
+
         if (results.isEmpty()) {
             results = document.select("a").filter { it.selectFirst("img") != null && it.attr("href").length > 5 }.mapNotNull { it.toSearchResult() }
         }
         return results.distinctBy { it.url }
     }
-    
+
     private fun Element.toSearchResult(): SearchResponse? {
         val aTag = if (this.tagName() == "a") this else this.selectFirst("a")
         val href = fixUrlNull(aTag?.attr("href")) ?: return null
         if (href.contains("javascript:") || href.contains("login") || href.contains("register")) return null
-        
+
         val imgTag = this.selectFirst("img") ?: return null
 
         val title = this.selectFirst("h2, h3, h4, h5, h6, .title, .tt h4, .post-title, [itemprop=name], .name")?.text()?.trim()?.takeIf { it.isNotBlank() }
@@ -62,9 +63,9 @@ class RebahinnProvider : MainAPI() {
             ?: imgTag.attr("title").trim().takeIf { it.isNotBlank() }
             ?: imgTag.attr("alt").trim().takeIf { it.isNotBlank() }
             ?: "Judul Tidak Diketahui"
-            
+
         val posterUrl = imgTag.fixPoster()
-        
+
         return if (href.contains("/anime/") || href.contains("/series/") || href.contains("/tv/") || href.contains("episode")) {
             newAnimeSearchResponse(title, href, TvType.Anime) { this.posterUrl = posterUrl }
         } else {
@@ -75,10 +76,10 @@ class RebahinnProvider : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val doc = app.get(url).document
         val title = doc.selectFirst("h1, h2.entry-title, .infox h1")?.text() ?: "Title"
-        val poster = doc.selectFirst("div.thumb img, .poster img")?.fixPoster()
-        val plot = doc.selectFirst(".entry-content, .desc, .sinopsis")?.text()
-        val isAnime = url.contains("anime") || doc.select("div.eplister").isNotEmpty()
-        
+        val poster = doc.selectFirst("div.thumb img, .poster img, .ts-cover img")?.fixPoster()
+        val plot = doc.selectFirst(".entry-content, .desc, .sinopsis, [itemprop=description]")?.text()
+        val isAnime = url.contains("anime") || doc.select("div.eplister, div.episodelist, ul.episodes").isNotEmpty()
+
         if (isAnime) {
             val episodes = mutableListOf<Episode>()
             doc.select("div.eplister li a, div.episodelist ul li a, ul.episodes li a").forEachIndexed { index, element ->
@@ -131,7 +132,13 @@ class RebahinnProvider : MainAPI() {
         Regex("(https?:\\/\\/[^\"']+\\.(?:m3u8|mp4))").findAll(htmlRaw).forEach { match ->
             val vidUrl = match.groupValues[1]
             val type = if (vidUrl.contains(".m3u8")) INFER_TYPE else ExtractorLinkType.VIDEO
-            newExtractorLink(this.name, this.name, vidUrl, type, callback)
+            newExtractorLink(
+                this.name,
+                this.name,
+                vidUrl,
+                type,
+                callback
+            )
         }
         return true
     }

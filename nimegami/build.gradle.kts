@@ -5,9 +5,9 @@ apply(plugin = "com.lagradost.cloudstream3.gradle")
 version = 1
 
 cloudstream {
-    description = "Rebahinn Provider"
+    description = "Nimegami Auto Provider"
     language = "id"
-    authors = listOf("Cloudstream AI")
+    authors = listOf("Raven_X")
 
     /**
      * Status: 1 (Ok)
@@ -20,7 +20,7 @@ cloudstream {
         "AsianDrama"
     )
 
-    iconUrl = "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://rebahinn.net&size=%size%"
+    iconUrl = "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://nimegami.id&size=%size%"
 }
 
 dependencies {

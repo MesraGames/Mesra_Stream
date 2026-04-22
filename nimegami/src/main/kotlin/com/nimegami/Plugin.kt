@@ -1,13 +1,13 @@
-package com.rebahinn
+package com.nimegami
 
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
 
 @CloudstreamPlugin
-class RebahinnPlugin: Plugin() {
+class NimegamiPlugin: Plugin() {
     override fun load(context: Context) {
-        registerMainAPI(RebahinnProvider())
-        registerExtractorAPI(RebahinnExtractor())
+        registerMainAPI(NimegamiProvider())
+        registerExtractorAPI(NimegamiExtractor())
     }
 }
