@@ -1,12 +1,12 @@
-package com.autoembed
+package com.zoronime
 
 import android.content.Context
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 
 @CloudstreamPlugin
-class AutoEmbedProviderPlugin : Plugin() {
+class ZoronimeProviderPlugin : Plugin() {
     override fun load(context: Context) {
-        registerMainAPI(AutoEmbedProvider())
+        registerMainAPI(ZoronimeProvider())
     }
 }
