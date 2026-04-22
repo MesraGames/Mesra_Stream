@@ -1,28 +1,27 @@
-apply(plugin = "com.android.library")
-apply(plugin = "kotlin-android")
-apply(plugin = "com.lagradost.cloudstream3.gradle")
+// use an integer for version numbers
+version = 12
 
-version = 1
 
 cloudstream {
-    description = "Nimegami Auto Provider"
     language = "id"
-    authors = listOf("Raven_X")
+    // All of these properties are optional, you can safely remove them
+
+    // description = "Lorem Ipsum"
+     authors = listOf("Raven_X")
 
     /**
-     * Status: 1 (Ok)
+     * Status int as the following:
+     * 0: Down
+     * 1: Ok
+     * 2: Slow
+     * 3: Beta only
      * */
-    status = 1
+    status = 1 // will be 3 if unspecified
     tvTypes = listOf(
-        "TvSeries",
-        "Movie",
+        "AnimeMovie",
         "Anime",
-        "AsianDrama"
+        "OVA",
     )
 
-    iconUrl = "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://nimegami.id&size=%size%"
-}
-
-dependencies {
-    // Dependensi standar otomatis ditangani
+    iconUrl = "https://www.google.com/s2/favicons?domain=nimegami.id&sz=%size%"
 }
