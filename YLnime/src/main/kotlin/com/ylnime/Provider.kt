@@ -11,55 +11,38 @@ class YLNime : MainAPI() {
     override val supportedTypes = setOf(TvType.Anime, TvType.Movie, TvType.TvSeries)
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val doc = app.get(mainUrl + "?terbaru=1").document
-        val items = ArrayList<HomePageList>()
-        for (element in doc.select(".list-update > .bs")) {
-            val title = element.selectFirst("h3")?.text() ?: ""
-            val url = element.selectFirst("a")?.attr("href") ?: ""
-            items.add(HomePageList(title, listOf(newAnimeSearchResponse(title, url, TvType.Anime) {
-                val img = element.selectFirst("img")
-                val imgUrl = img?.attr("data-src")?.takeIf { it.isNotBlank() } ?: img?.attr("src") ?: ""
-                this.posterUrl = fixUrl(imgUrl)
-            })))
+        val document = app.get("https://ylnime.com/index.php?terbaru=1").document
+        val home = document.select("article.box-article").mapNotNull {
+            val title = it.selectFirst("h2")?.text()?.trim() ?: return@mapNotNull null
+            val href = it.selectFirst("a")?.attr("href") ?: ""
+            val img = it.selectFirst("img")
+            val posterUrl = fixUrl(img?.attr("data-src")?.takeIf { it.isNotBlank() } ?: img?.attr("src") ?: "")
+            
+            newAnimeSearchResponse(title, fixUrl(href), TvType.Anime) {
+                this.posterUrl = posterUrl
+            }
         }
-        return newHomePageResponse(items, false)
+        return newHomePageResponse(listOf(HomePageList("Home", home)), false)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val doc = app.get(mainUrl + "?s=" + query).document
-        return doc.select(".list-update > .bs").map { element ->
-            val title = element.selectFirst("h3")?.text() ?: ""
-            val url = element.selectFirst("a")?.attr("href") ?: ""
-            newAnimeSearchResponse(title, url, TvType.Anime) {
-                val img = element.selectFirst("img")
-                val imgUrl = img?.attr("data-src")?.takeIf { it.isNotBlank() } ?: img?.attr("src") ?: ""
-                this.posterUrl = fixUrl(imgUrl)
-            }
-        }
+        return emptyList()
     }
 
     override suspend fun load(url: String): LoadResponse? {
-        val doc = app.get(url).document
-        val title = doc.selectFirst(".entry-title")?.text() ?: ""
-        val posterUrl = doc.selectFirst(".wp-post-image")?.attr("src") ?: ""
-        val episodes = ArrayList<Episode>()
-        for (element in doc.select(".epliste > .epl")) {
-            val episodeUrl = element.selectFirst("a")?.attr("href") ?: ""
-            episodes.add(newEpisode(episodeUrl) {
-                this.name = element.selectFirst("a")?.text() ?: ""
-            })
-        }
+        val document = app.get(url).document
+        val title = document.selectFirst("h1")?.text()?.trim() ?: ""
+        val img = document.selectFirst("img")
+        val poster = fixUrl(img?.attr("data-src")?.takeIf { it.isNotBlank() } ?: img?.attr("src") ?: "")
+        
         return newAnimeLoadResponse(title, url, TvType.Anime) {
-            this.posterUrl = fixUrl(posterUrl)
-            addEpisodes(DubStatus.Subbed, episodes)
+            this.posterUrl = poster
+            // addEpisodes(DubStatus.Subbed, listOf(newEpisode("data") { this.name = "Ep 1" }))
         }
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        callback.invoke(newExtractorLink(name, name, data, ExtractorLinkType.VIDEO) {
-            this.referer = mainUrl
-            this.quality = Qualities.Unknown.value
-        })
+        callback.invoke(YLNimeExtractor().getUrl(data, mainUrl)?.first()!!)
         return true
     }
 }
