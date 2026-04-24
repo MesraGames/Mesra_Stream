@@ -1,5 +1,3 @@
-import com.lagradost.cloudstream3.plugins.makePlugin
-
 // use an integer for version numbers
 version = 1
 
@@ -17,5 +15,3 @@ cloudstream {
     iconUrl = "https://www.google.com/s2/favicons?domain=ylnime.com&sz=%size%"
     isCrossPlatform = false
 }
-
-makePlugin()
