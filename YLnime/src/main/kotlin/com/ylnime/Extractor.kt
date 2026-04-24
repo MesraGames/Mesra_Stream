@@ -10,7 +10,7 @@ class YLNimeExtractor : ExtractorApi() {
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         return listOf(
-            ExtractorLink(this.name, this.name, url, mainUrl, Qualities.Unknown.value, false)
+            newExtractorLink(this.name, this.name, url, mainUrl, Qualities.Unknown.value, false)
         )
     }
 }

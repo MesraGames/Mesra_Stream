@@ -11,53 +11,53 @@ class YLNime : MainAPI() {
     override val supportedTypes = setOf(TvType.Anime, TvType.Movie, TvType.TvSeries)
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val doc = app.get("https://ylnime.com/index.php?terbaru=1").document
+        val doc = app.get(mainUrl + "/index.php?terbaru=" + page.toString()).document
         val items = ArrayList<HomePageList>()
-        val lists = doc.select("div.lsm")
-        for (list in lists) {
-            val title = list.select("a.title").text().trim()
-            val href = list.select("a.title").attr("href")
-            val image = list.select("img.lazy").attr("data-src")
-            items.add(HomePageList(title, listOf(newAnimeSearchResponse(title, href, TvType.Anime) { this.posterUrl = image })))
+        val elements = doc.select("div.post")
+        for (element in elements) {
+            val title = element.select("h2.title").text().trim()
+            val url = element.select("a").attr("href")
+            val posterUrl = element.select("img").attr("src")
+            items.add(HomePageList(title, listOf(newAnimeSearchResponse(title, url, TvType.Anime) { this.posterUrl = posterUrl })))
         }
-        return newHomePageResponse(items)
+        return newHomePageResponse(items, true)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val doc = app.get("https://ylnime.com/index.php?search=$query").document
-        val lists = doc.select("div.lsm")
+        val doc = app.get(mainUrl + "/?s=" + query).document
         val items = ArrayList<SearchResponse>()
-        for (list in lists) {
-            val title = list.select("a.title").text().trim()
-            val href = list.select("a.title").attr("href")
-            val image = list.select("img.lazy").attr("data-src")
-            items.add(newAnimeSearchResponse(title, href, TvType.Anime) { this.posterUrl = image })
+        val elements = doc.select("div.search-result")
+        for (element in elements) {
+            val title = element.select("h2").text().trim()
+            val url = element.select("a").attr("href")
+            val posterUrl = element.select("img").attr("src")
+            items.add(newAnimeSearchResponse(title, url, TvType.Anime) { this.posterUrl = posterUrl })
         }
         return items
     }
 
     override suspend fun load(url: String): LoadResponse? {
         val doc = app.get(url).document
-        val title = doc.select("h1.entry-title").text().trim()
-        val type = if (doc.select("span.type").text().contains("Movie")) TvType.Movie else TvType.Anime
+        val title = doc.select("h1").text().trim()
+        val posterUrl = doc.select("imgattachment").attr("src")
         val episodes = ArrayList<Episode>()
-        val eps = doc.select("div.eplist").select("li")
-        for (ep in eps) {
-            val episode = ep.select("a").attr("href")
-            episodes.add(Episode(ep.select("a").text().trim(), episode))
+        val elements = doc.select("div.episode")
+        for (element in elements) {
+            val episodeUrl = element.select("a").attr("href")
+            episodes.add(newEpisode(episodeUrl) { this.name = element.select("a").text().trim() })
         }
-        return newAnimeLoadResponse(title, url, type) { 
-            this.posterUrl = doc.select("img.featuredimg").attr("src")
-            addEpisodes(episodes)
+        return newAnimeLoadResponse(title, url, TvType.Anime) { 
+            this.posterUrl = posterUrl
+            addEpisodes(DubStatus.Subbed, episodes)
         }
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val extractor = YLNimeExtractor()
-        extractor.getUrl(data, null)?.let { links ->
-            for (link in links) {
-                callback.invoke(link)
-            }
+        val doc = app.get(data).document
+        val elements = doc.select("div.video-player")
+        for (element in elements) {
+            val link = element.select("source").attr("src")
+            callback.invoke(newExtractorLink(name, name, link, mainUrl, Qualities.Unknown.value, false))
         }
         return true
     }
