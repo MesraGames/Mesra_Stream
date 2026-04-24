@@ -50,6 +50,7 @@ Dedikasi, kerja keras, dan konsistensi kalian dalam menjaga serta mengembangkan 
 ✔️ SoraStream.cs3 — Aktif
 ✔️ Winbu.cs3 — Aktif
 ✔️ ZoronimeProvider.cs3 — Aktif
+✔️ Nimegami.cs3 — Aktif
 X nontonanimeindo.cs3 — Belum Fix
 
 🌟 *Terus berkarya dan berkembang — komunitas ini kuat karena kalian semua.*

@@ -94,7 +94,7 @@ object SoraExtractor : SoraStream() {
                 }
             } ?: return@amap
             when {
-                source.startsWith("https://jeniusplay.com") -> {
+                source.contains("jeniusplay", true) -> {
                     Jeniusplay2().getUrl(source, "$referer/", subtitleCallback, callback)
                 }
 
@@ -222,10 +222,12 @@ object SoraExtractor : SoraStream() {
         callback: (ExtractorLink) -> Unit,
     ) {
         val api = "https://cloudnestra.com"
-        val imdbUrl = if (season == null) {
-            "$vidSrcAPI/embed/movie?imdb=$imdbId"
-        } else {
-            "$vidSrcAPI/embed/tv?imdb=$imdbId&season=$season&episode=$episode"
+        val imdbUrl = imdbId?.takeIf { it.isNotBlank() }?.let {
+            if (season == null) {
+                "$vidSrcAPI/embed/movie?imdb=$it"
+            } else {
+                "$vidSrcAPI/embed/tv?imdb=$it&season=$season&episode=$episode"
+            }
         }
         val legacyUrl = tmdbId?.let {
             if (season == null) {
@@ -241,19 +243,19 @@ object SoraExtractor : SoraStream() {
                 "https://vsembed.ru/embed/$it/${season}-${episode}"
             }
         }
-
-        var emitted = false
-        listOfNotNull(imdbUrl, legacyUrl, vsembedUrl).distinct().forEach { embedUrl ->
-            loadExtractor(embedUrl, null, subtitleCallback) { link ->
-                emitted = true
-                callback.invoke(link)
+        val vidsrcMeUrl = tmdbId?.let {
+            if (season == null) {
+                "$vidsrcMeAPI/embed/movie/$it"
+            } else {
+                "$vidsrcMeAPI/embed/tv/$it/$season/$episode"
             }
         }
+        val candidateUrls = listOfNotNull(imdbUrl, legacyUrl, vsembedUrl, vidsrcMeUrl).distinct()
 
-        if (emitted) return
-        if (listOfNotNull(imdbUrl, legacyUrl, vsembedUrl).any { loadVidsrcXpass(it, false, null, callback) }) return
+        if (candidateUrls.any { loadVidsrcXpass(it, season != null, "$vidSrcAPI/", callback) }) return
 
-        val document = app.get(imdbUrl).document
+        val primaryUrl = imdbUrl ?: legacyUrl ?: vidsrcMeUrl ?: return
+        val document = app.get(primaryUrl).document
         val playerIframe = document.selectFirst("iframe#player_iframe")?.attr("src")
             ?.let { iframe ->
                 if (iframe.startsWith("//")) "https:$iframe" else iframe
@@ -268,7 +270,7 @@ object SoraExtractor : SoraStream() {
                 ?.let { "$api/rcp/$it" }
         } ?: return
 
-        val hash = app.get(rcpPath, referer = imdbUrl).text
+        val hash = app.get(rcpPath, referer = primaryUrl).text
             .substringAfter("/prorcp/")
             .substringBefore("'")
             .ifBlank { return }
@@ -289,26 +291,66 @@ object SoraExtractor : SoraStream() {
 
     }
 
+    suspend fun invokeVidsrcme(
+        tmdbId: Int?,
+        season: Int?,
+        episode: Int?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val id = tmdbId ?: return
+        val embedUrl = if (season == null) {
+            "$vidsrcMeAPI/embed/movie/$id"
+        } else {
+            "$vidsrcMeAPI/embed/tv/$id/$season/$episode"
+        }
+
+        if (loadVidsrcXpass(embedUrl, season != null, "$vidsrcMeAPI/", callback)) return
+
+        var emitted = false
+        loadExtractor(embedUrl, "$vidsrcMeAPI/", subtitleCallback) { link ->
+            emitted = true
+            callback.invoke(link)
+        }
+
+        if (emitted) return
+
+        invokeWebviewEmbedSource(
+            "VidSrcMe",
+            embedUrl,
+            "$vidsrcMeAPI/",
+            vidsrcMeAPI,
+            callback,
+            useOkhttp = false
+        )
+    }
+
     suspend fun invokeAzmovies(
-        title: String?,
+        titleCandidates: List<String>,
         year: Int?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
-        val query = title?.trim()?.takeIf { it.isNotBlank() } ?: return
-        val searchUrl =
-            "$azmoviesAPI/search?q=${query.urlEncodeCompat()}&year_from=0&year_to=0&rating_from=0&rating_to=10&sort=featured"
-        val searchDocument = requestAzMoviesPage(searchUrl).document
-        val targetUrl = searchDocument.select("#movies-container a.poster")
-            .mapNotNull { element ->
-                val href = element.attr("href").let { fixUrl(it, azmoviesAPI) }
-                val candidateTitle = element.selectFirst("span.poster__title")?.text()?.trim()
-                val candidateYear = element.selectFirst("span.badge")?.text()?.trim()?.toIntOrNull()
-                Triple(href, candidateTitle, candidateYear)
-            }.firstOrNull { (_, candidateTitle, candidateYear) ->
-                titleMatches(candidateTitle, query) && (year == null || candidateYear == null || candidateYear == year)
-            }?.first
-            ?: return
+        val queries = titleCandidates.map { it.trim() }.filter { it.isNotBlank() }.distinct()
+        if (queries.isEmpty()) return
+
+        val targetUrl = queries.firstNotNullOfOrNull { query ->
+            val searchUrl =
+                "$azmoviesAPI/search?q=${query.urlEncodeCompat()}&year_from=0&year_to=0&rating_from=0&rating_to=10&sort=featured"
+            val searchDocument = requestAzMoviesPage(searchUrl).document
+            searchDocument.select("#movies-container a.poster")
+                .mapNotNull { element ->
+                    val href = element.attr("href").let { fixUrl(it, azmoviesAPI) }
+                    val candidateTitle = element.selectFirst("span.poster__title")?.text()?.trim()
+                    val candidateYear = element.selectFirst("span.badge")?.text()?.trim()?.toIntOrNull()
+                    SearchMatchCandidate(
+                        url = href,
+                        title = candidateTitle,
+                        year = candidateYear,
+                        sourceQuery = query,
+                    )
+                }.bestSearchMatch(queries, year)?.url
+        } ?: return
 
         val response = requestAzMoviesPage(targetUrl)
         val seenSubtitles = linkedSetOf<String>()
@@ -331,27 +373,31 @@ object SoraExtractor : SoraStream() {
     }
 
     suspend fun invokeNoxx(
-        title: String?,
+        titleCandidates: List<String>,
         season: Int?,
         episode: Int?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ) {
-        val query = title?.trim()?.takeIf { it.isNotBlank() } ?: return
+        val queries = titleCandidates.map { it.trim() }.filter { it.isNotBlank() }.distinct()
+        if (queries.isEmpty()) return
         val targetSeason = season ?: return
         val targetEpisode = episode ?: return
-        val searchUrl = "$noxxAPI/browse?q=${query.urlEncodeCompat()}"
-        val searchDocument = requestNoxxPage(searchUrl).document
-        val showUrl = searchDocument.select("a.poster-card")
-            .mapNotNull { card ->
-                val href = card.attr("href").let { fixUrl(it, noxxAPI) }
-                val candidateTitle = card.selectFirst("img")?.attr("alt")?.trim()
-                    ?: card.selectFirst("span")?.text()?.trim()
-                href to candidateTitle
-            }.firstOrNull { (_, candidateTitle) ->
-                titleMatches(candidateTitle, query)
-            }?.first
-            ?: return
+        val showUrl = queries.firstNotNullOfOrNull { query ->
+            val searchUrl = "$noxxAPI/browse?q=${query.urlEncodeCompat()}"
+            val searchDocument = requestNoxxPage(searchUrl).document
+            searchDocument.select("a.poster-card")
+                .mapNotNull { card ->
+                    val href = card.attr("href").let { fixUrl(it, noxxAPI) }
+                    val candidateTitle = card.selectFirst("img")?.attr("alt")?.trim()
+                        ?: card.selectFirst("span")?.text()?.trim()
+                    SearchMatchCandidate(
+                        url = href,
+                        title = candidateTitle,
+                        sourceQuery = query,
+                    )
+                }.bestSearchMatch(queries)?.url
+        } ?: return
 
         val showDocument = requestNoxxPage(showUrl).document
         val episodeUrl = showDocument.select("a.episode-card")
@@ -560,6 +606,7 @@ object SoraExtractor : SoraStream() {
         )
 
         val mediaUrl = mediaRes.url
+        if (!isReliableCineSrcMediaUrl(mediaUrl)) return
         val mediaType = when {
             mediaUrl.contains(".m3u8", ignoreCase = true) -> ExtractorLinkType.M3U8
             mediaUrl.contains(".mp4", ignoreCase = true) -> INFER_TYPE
@@ -590,11 +637,14 @@ object SoraExtractor : SoraStream() {
         referer: String,
         origin: String,
         callback: (ExtractorLink) -> Unit,
-    ) {
+        useOkhttp: Boolean = true,
+    ): Boolean {
+        var emitted = false
         val mediaRes = app.get(
             pageUrl,
             interceptor = WebViewResolver(
                 Regex("""https?://[^"'\\s]+?\.(?:m3u8|mp4)(?:\?[^"'\\s]*)?"""),
+                useOkhttp = useOkhttp,
                 timeout = 20_000L
             )
         )
@@ -603,25 +653,59 @@ object SoraExtractor : SoraStream() {
         val mediaType = when {
             mediaUrl.contains(".m3u8", ignoreCase = true) -> ExtractorLinkType.M3U8
             mediaUrl.contains(".mp4", ignoreCase = true) -> INFER_TYPE
-            else -> return
+            else -> null
         }
 
-        callback.invoke(
-            newExtractorLink(
-                sourceName,
-                sourceName,
-                mediaUrl,
-                mediaType
-            ) {
-                this.referer = referer
-                this.headers = mapOf(
-                    "Accept" to "*/*",
-                    "Referer" to referer,
-                    "Origin" to origin,
-                    "User-Agent" to USER_AGENT,
+        if (mediaType != null) {
+            emitted = true
+            callback.invoke(
+                newExtractorLink(
+                    sourceName,
+                    sourceName,
+                    mediaUrl,
+                    mediaType
+                ) {
+                    this.referer = referer
+                    this.headers = mapOf(
+                        "Accept" to "*/*",
+                        "Referer" to referer,
+                        "Origin" to origin,
+                        "User-Agent" to USER_AGENT,
+                    )
+                }
+            )
+            return true
+        }
+
+        extractPlayableUrlFromHtml(mediaRes.text, getBaseUrl(mediaRes.url))?.let { nestedUrl ->
+            val normalizedUrl = nestedUrl.fixUrlBloat()
+            if (normalizedUrl.contains(".m3u8", true) || normalizedUrl.contains(".mp4", true)) {
+                emitted = true
+                callback.invoke(
+                    newExtractorLink(
+                        sourceName,
+                        sourceName,
+                        normalizedUrl,
+                        if (normalizedUrl.contains(".m3u8", true)) ExtractorLinkType.M3U8 else INFER_TYPE
+                    ) {
+                        this.referer = referer
+                        this.headers = mapOf(
+                            "Accept" to "*/*",
+                            "Referer" to referer,
+                            "Origin" to origin,
+                            "User-Agent" to USER_AGENT,
+                        )
+                    }
                 )
+            } else {
+                loadExtractor(normalizedUrl, referer, { _: SubtitleFile -> }) { link ->
+                    emitted = true
+                    callback.invoke(link)
+                }
             }
-        )
+        }
+
+        return emitted
     }
 
     suspend fun invokeMafiaEmbed(
@@ -701,14 +785,224 @@ object SoraExtractor : SoraStream() {
         } else {
             "$twoEmbedAPI/embed/tv/$tmdbId/$season/$episode"
         }
+        val fallbackCcUrl = if (season == null) {
+            "https://www.2embed.cc/embed/movie/$tmdbId"
+        } else {
+            "https://www.2embed.cc/embed/tv/$tmdbId/$season/$episode"
+        }
 
-        invokeWebviewEmbedSource(
+        if (invokeWebviewEmbedSource(
             "2Embed",
             url,
             "$twoEmbedAPI/",
             twoEmbedAPI,
             callback
+        )) {
+            return
+        }
+
+        val fallbackHtml = app.get(
+            fallbackCcUrl,
+            headers = mapOf("User-Agent" to USER_AGENT)
+        ).text
+
+        val xpsUrl = Regex("""https://streamsrcs\.2embed\.cc/xps(?:-tv)?\?[^'"\s<]+""", RegexOption.IGNORE_CASE)
+            .find(fallbackHtml)
+            ?.value
+
+        if (!xpsUrl.isNullOrBlank()) {
+            if (loadVidsrcXpass(xpsUrl, season != null, fallbackCcUrl, callback)) return
+
+            val xpsResponse = app.get(
+                xpsUrl,
+                referer = fallbackCcUrl,
+                headers = mapOf("User-Agent" to USER_AGENT)
+            )
+            extractPlayableUrlFromHtml(xpsResponse.text, getBaseUrl(xpsResponse.url))?.let { resolved ->
+                if (loadVidsrcXpass(resolved, season != null, xpsUrl, callback)) return
+            }
+        }
+
+        val nestedUrl = Regex("""<iframe[^>]+id=["']iframesrc["'][^>]+data-src=["']([^"']+)["']""", RegexOption.IGNORE_CASE)
+            .find(fallbackHtml)
+            ?.groupValues
+            ?.getOrNull(1)
+            ?.let { fixUrl(it, "https://www.2embed.cc") }
+
+        if (!nestedUrl.isNullOrBlank()) {
+            if (loadVidsrcXpass(nestedUrl, season != null, fallbackCcUrl, callback)) return
+            invokeWebviewEmbedSource(
+                "2Embed",
+                nestedUrl,
+                fallbackCcUrl,
+                getBaseUrl(nestedUrl),
+                callback,
+                useOkhttp = false
+            )
+        }
+    }
+
+    suspend fun invokeMultiEmbed(
+        tmdbId: Int?,
+        imdbId: String?,
+        season: Int?,
+        episode: Int?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val videoIds = listOfNotNull(tmdbId?.toString(), imdbId).distinct()
+        if (videoIds.isEmpty()) return
+
+        val userAgent =
+            "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36"
+        val headers = mapOf(
+            "User-Agent" to userAgent,
+            "Referer" to multiEmbedAPI,
+            "X-Requested-With" to "XMLHttpRequest",
         )
+        videoIds.forEach { videoId ->
+            val baseUrl = buildString {
+                append("$multiEmbedAPI/?video_id=")
+                append(videoId)
+                if (season != null && episode != null) append("&s=$season&e=$episode")
+            }
+            val resolvedUrl = app.get(baseUrl, headers = headers).url
+            if (
+                invokeWebviewEmbedSource(
+                    "MultiEmbed",
+                    resolvedUrl,
+                    "$multiEmbedAPI/",
+                    getBaseUrl(resolvedUrl),
+                    callback,
+                    useOkhttp = false
+                )
+            ) {
+                return
+            }
+
+            val pageHtml = app.post(
+                resolvedUrl,
+                data = mapOf(
+                    "button-click" to "ZEhKMVpTLVF0LVBTLVF0LVAtMGs1TFMtUXpPREF0TC0wLVYzTi0wVS1RTi0wQTFORGN6TmprLTU=",
+                    "button-referer" to ""
+                ),
+                headers = headers
+            ).text
+            val token = Regex("""load_sources\("([^"]+)"\)""").find(pageHtml)?.groupValues?.get(1) ?: return@forEach
+            val sourcesHtml = app.post(
+                "https://streamingnow.mov/response.php",
+                data = mapOf("token" to token),
+                headers = headers
+            ).text
+
+            Jsoup.parse(sourcesHtml).select("li").amap { server ->
+                val serverId = server.attr("data-server")
+                val sourceVideoId = server.attr("data-id")
+                if (serverId.isBlank() || sourceVideoId.isBlank()) return@amap
+
+                runCatching {
+                    val playUrl = "https://streamingnow.mov/playvideo.php" +
+                        "?video_id=${sourceVideoId.substringBefore("=")}&server_id=$serverId&token=$token&init=1"
+                    val playHtml = app.get(playUrl, headers = headers).text
+                    val iframeUrl = Jsoup.parse(playHtml).selectFirst("iframe.source-frame.show")?.attr("src")
+                        ?: return@runCatching
+                    val iframeHtml = app.get(iframeUrl, headers = headers).text
+                    val fileUrl = Jsoup.parse(iframeHtml).selectFirst("iframe.source-frame.show")?.attr("src")
+                        ?: Regex("""file:"(https?://[^"]+)"""").find(iframeHtml)?.groupValues?.get(1)
+                        ?: extractPlayableUrlFromHtml(iframeHtml, getBaseUrl(iframeUrl))
+                        ?: return@runCatching
+
+                    when {
+                        fileUrl.contains(".m3u8", true) || fileUrl.contains(".json", true) ->
+                            M3u8Helper.generateM3u8("MultiEmbed", fileUrl, multiEmbedAPI).forEach(callback)
+
+                        loadVidsrcXpass(fileUrl, season != null, multiEmbedAPI, callback) -> Unit
+
+                        !fileUrl.contains("vidsrc", true) -> loadExtractor(fileUrl, multiEmbedAPI, subtitleCallback, callback)
+                    }
+                }
+            }
+        }
+    }
+
+    suspend fun invokeNinetv(
+        tmdbId: Int?,
+        season: Int?,
+        episode: Int?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val url = if (season == null) {
+            "$nineTvAPI/movie/$tmdbId"
+        } else {
+            "$nineTvAPI/tv/$tmdbId-$season-$episode"
+        }
+        val iframe = app.get(url, referer = "https://pressplay.top/").document.selectFirst("iframe")?.attr("src") ?: return
+        loadExtractor(iframe, "$nineTvAPI/", subtitleCallback, callback)
+    }
+
+    suspend fun invokeRidomovies(
+        tmdbId: Int?,
+        imdbId: String?,
+        season: Int?,
+        episode: Int?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val searchResponse = app.get("$ridomoviesAPI/core/api/search?q=$imdbId", interceptor = wpRedisInterceptor)
+        if (searchResponse.code != 200) return
+
+        val mediaSlug = searchResponse.parsedSafe<RidoSearch>()
+            ?.data?.items?.find { it.contentable?.tmdbId == tmdbId || it.contentable?.imdbId == imdbId }
+            ?.slug ?: return
+
+        val id = season?.let {
+            val episodeUrl = "$ridomoviesAPI/tv/$mediaSlug/season-$it/episode-$episode"
+            val episodeResponse = app.get(episodeUrl, interceptor = wpRedisInterceptor)
+            if (episodeResponse.code != 200) return@let null
+            episodeResponse.text.substringAfterLast("""postid\":\"""").substringBefore("\"")
+        } ?: mediaSlug
+
+        val url = "$ridomoviesAPI/core/api/${if (season == null) "movies" else "episodes"}/$id/videos"
+        val videoResponse = app.get(url, interceptor = wpRedisInterceptor)
+        if (videoResponse.code != 200) return
+
+        videoResponse.parsedSafe<RidoResponses>()?.data?.amap { link ->
+            val iframe = Jsoup.parse(link.url ?: return@amap).select("iframe").attr("data-src")
+            if (iframe.startsWith("https://closeload.top")) {
+                val unpacked = getAndUnpack(
+                    app.get(iframe, referer = "$ridomoviesAPI/", interceptor = wpRedisInterceptor).text
+                )
+                val encodeHash = Regex("\\(\"([^\"]+)\"\\);").find(unpacked)?.groupValues?.get(1) ?: return@amap
+                val video = base64Decode(base64Decode(encodeHash).reversed()).split("|").getOrNull(1) ?: return@amap
+                callback.invoke(
+                    newExtractorLink("Ridomovies", "Ridomovies", video, ExtractorLinkType.M3U8) {
+                        this.referer = "${getBaseUrl(iframe)}/"
+                        this.quality = Qualities.P1080.value
+                    }
+                )
+            } else {
+                loadExtractor(iframe, "$ridomoviesAPI/", subtitleCallback, callback)
+            }
+        }
+    }
+
+    suspend fun invokeSoapy(
+        tmdbId: Int?,
+        season: Int?,
+        episode: Int?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        listOf("juliet", "romio").amap { player ->
+            val url = if (season == null) {
+                "$soapyAPI/embed/movies.php?tmdbid=$tmdbId&player=$player"
+            } else {
+                "$soapyAPI/embed/series.php?tmdbid=$tmdbId&season=$season&episode=$episode&player=$player"
+            }
+            val iframe = app.get(url).document.select("iframe").attr("src")
+            if (iframe.isNotBlank()) loadExtractor(iframe, soapyAPI, subtitleCallback, callback)
+        }
     }
 
     suspend fun invokeVidsrcMov(
@@ -730,6 +1024,180 @@ object SoraExtractor : SoraStream() {
             url,
             "$vidsrcMovAPI/",
             vidsrcMovAPI,
+            callback
+        )
+    }
+
+    suspend fun invokeRiveStream(
+        tmdbId: Int?,
+        season: Int?,
+        episode: Int?,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val id = tmdbId ?: return
+        val type = if (season == null) "movie" else "tv"
+        val headers = mapOf("User-Agent" to USER_AGENT)
+
+        suspend fun <T> riveRequest(block: suspend () -> T): T? {
+            repeat(2) {
+                runCatching { block() }.getOrNull()?.let { return it }
+            }
+            return runCatching { block() }.getOrNull()
+        }
+
+        val sourceList = riveRequest {
+            app.get(
+                "$riveStreamAPI/api/backendfetch?requestID=VideoProviderServices&secretKey=rive",
+                headers = headers
+            ).parsedSafe<RiveStreamSource>()
+        }
+
+        val secretKey = riveRequest {
+            val homeDoc = app.get(riveStreamAPI, headers = headers, timeout = 20).document
+            val appScript = homeDoc.select("script")
+                .firstOrNull { it.attr("src").contains("_app") }
+                ?.attr("src")
+                ?.takeIf { it.isNotBlank() }
+                ?: return@riveRequest null
+            val js = app.get(fixUrl(appScript, riveStreamAPI), headers = headers, timeout = 20).text
+            val keyList = Regex("""let\s+c\s*=\s*(\[[^]]*])""")
+                .find(js)
+                ?.groupValues
+                ?.getOrNull(1)
+                ?.let { array ->
+                    Regex("\"([^\"]+)\"").findAll(array).map { it.groupValues[1] }.toList()
+                }
+                .orEmpty()
+            if (keyList.isEmpty()) return@riveRequest null
+            app.get(
+                "https://rivestream.supe2372.workers.dev/?input=$id&cList=${keyList.joinToString(",")}"
+            ).text.trim().takeIf { it.isNotBlank() }
+        }
+
+        var emitted = false
+        if (!secretKey.isNullOrBlank()) {
+            sourceList?.data?.distinct()?.amap { service ->
+                val streamUrl = if (season == null) {
+                    "$riveStreamAPI/api/backendfetch?requestID=movieVideoProvider&id=$id&service=$service&secretKey=$secretKey"
+                } else {
+                    "$riveStreamAPI/api/backendfetch?requestID=tvVideoProvider&id=$id&season=$season&episode=$episode&service=$service&secretKey=$secretKey"
+                }
+
+                val response = riveRequest {
+                    app.get(streamUrl, headers = headers, timeout = 10).parsedSafe<RiveStreamResponse>()
+                } ?: return@amap
+
+                response.data?.sources?.forEach { source ->
+                    parseRiveStreamSource(source)?.let { link ->
+                        emitted = true
+                        callback(link)
+                    }
+                }
+            }
+        }
+
+        if (emitted) return
+
+        val watchUrl = if (season == null) {
+            "$riveStreamAPI/watch?type=$type&id=$id"
+        } else {
+            "$riveStreamAPI/watch?type=$type&id=$id&season=$season&episode=$episode"
+        }
+
+        val externalRes = app.get(
+            watchUrl,
+            interceptor = WebViewResolver(
+                Regex("""https?://(?!([^/]+\.)?rivestream\.org(?:/|$))[^"'\\s]+"""),
+                timeout = 30_000L
+            )
+        )
+
+        val externalUrl = externalRes.url
+        if (!externalUrl.contains("rivestream.org", true)) {
+            if (loadVidsrcXpass(externalUrl, season != null, "$riveStreamAPI/", callback)) return
+
+            var emitted = false
+            loadExtractor(externalUrl, "$riveStreamAPI/", { _: SubtitleFile -> }) { link ->
+                emitted = true
+                callback.invoke(link)
+            }
+            if (emitted) return
+
+            if (externalUrl.contains(".m3u8", true) || externalUrl.contains(".mp4", true)) {
+                callback.invoke(
+                    newExtractorLink(
+                        "RiveStream",
+                        "RiveStream",
+                        externalUrl,
+                        if (externalUrl.contains(".m3u8", true)) ExtractorLinkType.M3U8 else INFER_TYPE
+                    ) {
+                        this.referer = "$riveStreamAPI/"
+                        this.headers = mapOf(
+                            "Accept" to "*/*",
+                            "Referer" to "$riveStreamAPI/",
+                            "Origin" to riveStreamAPI,
+                            "User-Agent" to USER_AGENT,
+                        )
+                    }
+                )
+                return
+            }
+
+            invokeWebviewEmbedSource(
+                "RiveStream",
+                externalUrl,
+                "$riveStreamAPI/",
+                getBaseUrl(externalUrl),
+                callback
+            )
+            return
+        }
+
+        val aggUrl = if (season == null) {
+            "$riveStreamAPI/embed/agg?type=$type&id=$id"
+        } else {
+            "$riveStreamAPI/embed/agg?type=$type&id=$id&season=$season&episode=$episode"
+        }
+
+        if (invokeWebviewEmbedSource(
+            "RiveStream",
+            aggUrl,
+            "$riveStreamAPI/",
+            riveStreamAPI,
+            callback,
+            useOkhttp = false
+        )) {
+            return
+        }
+
+        invokeWebviewEmbedSource(
+            "RiveStream",
+            watchUrl,
+            "$riveStreamAPI/",
+            riveStreamAPI,
+            callback,
+            useOkhttp = false
+        )
+    }
+
+    suspend fun invokeSmashyStream(
+        imdbId: String?,
+        season: Int?,
+        episode: Int?,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val cleanImdbId = imdbId?.takeIf { it.isNotBlank() } ?: return
+        val url = if (season == null) {
+            "$smashyStreamAPI/playere.php?imdb=$cleanImdbId"
+        } else {
+            "$smashyStreamAPI/playere.php?imdb=$cleanImdbId&season=$season&episode=$episode"
+        }
+
+        invokeWebviewEmbedSource(
+            "SmashyStream",
+            url,
+            "https://smashystream.com/",
+            "https://smashystream.com",
             callback
         )
     }
@@ -774,7 +1242,7 @@ object SoraExtractor : SoraStream() {
     }
 
     suspend fun invokeKisskh(
-        title: String,
+        titleCandidates: List<String>,
         year: Int?,
         season: Int?,
         episode: Int?,
@@ -786,11 +1254,24 @@ object SoraExtractor : SoraStream() {
         val KISSKH_SUB_API = "https://script.google.com/macros/s/AKfycbyq6hTj0ZhlinYC6xbggtgo166tp6XaDKBCGtnYk8uOfYBUFwwxBui0sGXiu_zIFmA/exec?id="
 
         try {
-            val searchRes = app.get("$mainUrl/api/DramaList/Search?q=$title&type=0").text
-            val searchList = tryParseJson<ArrayList<KisskhMedia>>(searchRes) ?: return
-            val matched = searchList.find { 
-                it.title.equals(title, true) 
-            } ?: searchList.firstOrNull { it.title?.contains(title, true) == true } ?: return
+            val queries = titleCandidates.map { it.trim() }.filter { it.isNotBlank() }.distinct()
+            if (queries.isEmpty()) return
+            val matched = queries.firstNotNullOfOrNull { query ->
+                val searchRes = app.get("$mainUrl/api/DramaList/Search?q=${query.urlEncodeCompat()}&type=0").text
+                val searchList = tryParseJson<ArrayList<KisskhMedia>>(searchRes) ?: return@firstNotNullOfOrNull null
+                searchList
+                    .map { media ->
+                        SearchMatchCandidate(
+                            url = media.id?.toString().orEmpty(),
+                            title = media.title,
+                            year = media.releaseDate?.substringBefore("-")?.toIntOrNull(),
+                            sourceQuery = query,
+                            payload = media,
+                        )
+                    }
+                    .bestSearchMatch(queries, year)
+                    ?.payload as? KisskhMedia
+            } ?: return
             val dramaId = matched.id ?: return
             val detailRes = app.get("$mainUrl/api/DramaList/Drama/$dramaId?isq=false").parsedSafe<KisskhDetail>() ?: return
             val episodes = detailRes.episodes ?: return
@@ -806,6 +1287,9 @@ object SoraExtractor : SoraStream() {
 
             val videoLink = sources?.video
             val thirdParty = sources?.thirdParty
+
+            val episodeReferer =
+                "$mainUrl/Drama/${matched.title?.let { getKisskhTitle(it) }.orEmpty()}/Episode-${targetEp.number?.toInt() ?: episode}?id=$dramaId&ep=$epsId&page=0&pageSize=100"
 
             listOfNotNull(videoLink, thirdParty).forEach { link ->
                 if (link.contains(".m3u8")) {
@@ -826,6 +1310,13 @@ object SoraExtractor : SoraStream() {
                             this.referer = mainUrl
                         }
                     )
+                } else {
+                    loadExtractor(
+                        link.substringBefore("=http"),
+                        episodeReferer,
+                        subtitleCallback,
+                        callback
+                    )
                 }
             }
 
@@ -845,9 +1336,63 @@ object SoraExtractor : SoraStream() {
         }
     }
 
+    suspend fun invokeWatch32(
+        titleCandidates: List<String>,
+        season: Int?,
+        episode: Int?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val queries = titleCandidates.map { it.trim() }.filter { it.isNotBlank() }.distinct()
+        if (queries.isEmpty()) return
+
+        val typeLabel = if (season == null) "Movie" else "TV"
+        val matchedAnchor = queries.firstNotNullOfOrNull { query ->
+            val doc = app.get("${watch32API}/search/${query.replace(" ", "-")}", timeout = 120L).document
+            doc.select("div.flw-item").mapNotNull { item ->
+                val anchor = item.selectFirst("h2.film-name a") ?: return@mapNotNull null
+                val mediaType = item.selectFirst("span.fdi-type")?.text()?.trim().orEmpty()
+                if (!mediaType.equals(typeLabel, true)) return@mapNotNull null
+                SearchMatchCandidate(
+                    url = fixUrl(anchor.attr("href"), watch32API),
+                    title = anchor.text(),
+                    sourceQuery = query,
+                    payload = anchor.attr("href"),
+                )
+            }.bestSearchMatch(queries)?.payload as? String
+        } ?: return
+
+        val detailUrl = fixUrl(matchedAnchor, watch32API)
+        val infoId = detailUrl.substringAfterLast("-")
+
+        if (season != null) {
+            val seasonLinks = app.get("${watch32API}/ajax/season/list/$infoId").document.select("div.dropdown-menu a")
+            val matchedSeason = seasonLinks.firstOrNull { it.text().contains("Season $season", true) } ?: return
+            val seasonId = matchedSeason.attr("data-id")
+            val episodeLinks = app.get("${watch32API}/ajax/season/episodes/$seasonId").document.select("li.nav-item a")
+            val matchedEpisode = episodeLinks.firstOrNull { it.text().contains("Eps $episode:", true) } ?: return
+            val dataId = matchedEpisode.attr("data-id")
+            val serverDoc = app.get("${watch32API}/ajax/episode/servers/$dataId").document
+            serverDoc.select("li.nav-item a").amap { source ->
+                val sourceId = source.attr("data-id")
+                val iframeUrl = app.get("${watch32API}/ajax/episode/sources/$sourceId").parsedSafe<Watch32Source>()?.link ?: return@amap
+                loadExtractor(iframeUrl, "", subtitleCallback, callback)
+            }
+        } else {
+            val episodeLinks = app.get("${watch32API}/ajax/episode/list/$infoId").document.select("li.nav-item a")
+            episodeLinks.amap { ep ->
+                val dataId = ep.attr("data-id")
+                if (dataId.isBlank()) return@amap
+                val iframeUrl = app.get("${watch32API}/ajax/episode/sources/$dataId").parsedSafe<Watch32Source>()?.link ?: return@amap
+                loadExtractor(iframeUrl, "", subtitleCallback, callback)
+            }
+        }
+    }
+
     private data class KisskhMedia(
         @param:JsonProperty("id") val id: Int?,
-        @param:JsonProperty("title") val title: String?
+        @param:JsonProperty("title") val title: String?,
+        @param:JsonProperty("releaseDate") val releaseDate: String? = null,
     )
     private data class KisskhDetail(@param:JsonProperty("episodes") val episodes: ArrayList<KisskhEpisode>?)
     private data class KisskhEpisode(
@@ -862,6 +1407,10 @@ object SoraExtractor : SoraStream() {
     private data class KisskhSubtitle(
         @param:JsonProperty("src") val src: String?,
         @param:JsonProperty("label") val label: String?
+    )
+
+    private data class Watch32Source(
+        @param:JsonProperty("link") val link: String? = null,
     )
 
     private suspend fun loadVidsrcXpass(
@@ -940,6 +1489,22 @@ object SoraExtractor : SoraStream() {
         if (generatedLinks.isEmpty()) return false
         generatedLinks.forEach(callback)
         return true
+    }
+
+    private fun extractPlayableUrlFromHtml(
+        html: String,
+        baseUrl: String,
+    ): String? {
+        val document = Jsoup.parse(html, baseUrl)
+        return listOfNotNull(
+            document.selectFirst("iframe.source-frame.show")?.attr("abs:src"),
+            document.selectFirst("iframe[data-src]")?.attr("abs:data-src"),
+            document.selectFirst("iframe[src]")?.attr("abs:src"),
+            document.selectFirst("source[src]")?.attr("abs:src"),
+            Regex("""file\s*:\s*"(https?://[^"]+)"""").find(html)?.groupValues?.getOrNull(1),
+            Regex("""["'](https?://[^"'\\s]+?\.(?:m3u8|mp4|json)(?:\?[^"'\\s]*)?)["']""")
+                .find(html)?.groupValues?.getOrNull(1),
+        ).firstOrNull { !it.isNullOrBlank() }
     }
 
     private suspend fun requestAzMoviesPage(url: String): NiceResponse {
@@ -1027,18 +1592,137 @@ object SoraExtractor : SoraStream() {
     }
 
     private fun titleMatches(candidate: String?, target: String): Boolean {
-        val normalizedCandidate = candidate.normalizeSearchTitle()
-        val normalizedTarget = target.normalizeSearchTitle()
-        return normalizedCandidate == normalizedTarget ||
-            normalizedCandidate.contains(normalizedTarget) ||
-            normalizedTarget.contains(normalizedCandidate)
+        return titleMatchScore(candidate, target) >= 85
     }
 
     private fun String?.normalizeSearchTitle(): String {
         return this.orEmpty().lowercase().replace(Regex("[^a-z0-9]+"), " ").trim()
     }
 
+    private fun titleMatchScore(candidate: String?, target: String): Int {
+        val normalizedCandidate = candidate.normalizeSearchTitle()
+        val normalizedTarget = target.normalizeSearchTitle()
+        if (normalizedCandidate.isBlank() || normalizedTarget.isBlank()) return 0
+        if (normalizedCandidate == normalizedTarget) return 100
+
+        val candidateTokens = normalizedCandidate.split(" ").filter { it.isNotBlank() }
+        val targetTokens = normalizedTarget.split(" ").filter { it.isNotBlank() }
+        if (candidateTokens.isEmpty() || targetTokens.isEmpty()) return 0
+
+        val commonTokens = candidateTokens.intersect(targetTokens.toSet())
+        val targetCoverage = commonTokens.size.toDouble() / targetTokens.size
+        val candidateCoverage = commonTokens.size.toDouble() / candidateTokens.size
+
+        if (targetTokens.size >= 2 && targetCoverage == 1.0 && candidateTokens.size <= targetTokens.size + 1) {
+            return 95
+        }
+
+        if (candidateTokens.size >= 2 && candidateCoverage == 1.0 && targetTokens.size <= candidateTokens.size + 1) {
+            return 92
+        }
+
+        if (commonTokens.size >= 2 && targetCoverage >= 0.8 && candidateCoverage >= 0.6) {
+            return 88
+        }
+
+        if (normalizedCandidate.contains(normalizedTarget) || normalizedTarget.contains(normalizedCandidate)) {
+            return if (minOf(normalizedCandidate.length, normalizedTarget.length) >= 10) 80 else 0
+        }
+
+        return 0
+    }
+
+    private fun List<SearchMatchCandidate>.bestSearchMatch(
+        targetTitles: List<String>,
+        expectedYear: Int? = null,
+    ): SearchMatchCandidate? {
+        return this.mapNotNull { candidate ->
+            val score = targetTitles.maxOfOrNull { title -> titleMatchScore(candidate.title, title) } ?: 0
+            if (score < 85) return@mapNotNull null
+            val yearBonus = when {
+                expectedYear == null || candidate.year == null -> 0
+                candidate.year == expectedYear -> 10
+                else -> -15
+            }
+            candidate to (score + yearBonus)
+        }.maxByOrNull { it.second }?.first
+    }
+
     private fun String.urlEncodeCompat(): String = URLEncoder.encode(this, "UTF-8")
+
+    private fun isReliableCineSrcMediaUrl(url: String): Boolean {
+        if (url.isBlank()) return false
+        val lowerUrl = url.lowercase()
+        if (lowerUrl.contains(".m3u8")) return true
+        if (!lowerUrl.contains(".mp4")) return false
+        val host = runCatching { java.net.URI(url).host.orEmpty().lowercase() }.getOrDefault("")
+        if (host.contains("cinesrc.") || host.contains("cineflix.")) return false
+        if (lowerUrl.contains("/intro") || lowerUrl.contains("intro.") || lowerUrl.contains("bumper")) return false
+        return true
+    }
+
+    private suspend fun parseRiveStreamSource(source: RiveStreamVideo): ExtractorLink? {
+        val rawUrl = source.url?.takeIf { it.isNotBlank() } ?: return null
+        val baseName = source.source?.takeIf { it.isNotBlank() } ?: "Source"
+        val qualityLabel = source.quality?.takeIf { it.isNotBlank() }
+        val label = buildString {
+            append("RiveStream ")
+            append(baseName)
+            if (!qualityLabel.isNullOrBlank() && !baseName.contains("AsiaCloud", true)) {
+                append(" [")
+                append(qualityLabel)
+                append("]")
+            }
+        }
+
+        if (rawUrl.contains("proxy?url=")) {
+            val decoded = URLDecoder.decode(rawUrl, "UTF-8")
+            val encodedUrl = decoded.substringAfter("proxy?url=", "").substringBefore("&headers=")
+            if (encodedUrl.isBlank()) return null
+            val mediaUrl = URLDecoder.decode(encodedUrl, "UTF-8")
+            val headerPayload = decoded.substringAfter("&headers=", "")
+            val headerJson = runCatching { URLDecoder.decode(headerPayload, "UTF-8") }.getOrDefault("")
+            val headerMap = runCatching {
+                JSONObject(headerJson).let { json ->
+                    json.keys().asSequence().associateWith { json.getString(it) }
+                }
+            }.getOrDefault(emptyMap())
+            val referer = headerMap["Referer"].orEmpty()
+            val origin = headerMap["Origin"].orEmpty()
+
+            return newExtractorLink(
+                label,
+                label,
+                mediaUrl,
+                if (mediaUrl.contains(".m3u8", true)) ExtractorLinkType.M3U8 else INFER_TYPE
+            ) {
+                this.quality = Qualities.P1080.value
+                this.referer = referer
+                this.headers = buildMap {
+                    if (referer.isNotBlank()) put("Referer", referer)
+                    if (origin.isNotBlank()) put("Origin", origin)
+                    put("User-Agent", USER_AGENT)
+                }
+            }
+        }
+
+        return newExtractorLink(
+            "$label (VLC)",
+            "$label (VLC)",
+            rawUrl,
+            if (rawUrl.contains(".m3u8", true)) ExtractorLinkType.M3U8 else INFER_TYPE
+        ) {
+            this.quality = Qualities.P1080.value
+        }
+    }
+
+    private data class SearchMatchCandidate(
+        val url: String,
+        val title: String?,
+        val year: Int? = null,
+        val sourceQuery: String,
+        val payload: Any? = null,
+    )
 
     private data class SiteSourceButton(
         val url: String,

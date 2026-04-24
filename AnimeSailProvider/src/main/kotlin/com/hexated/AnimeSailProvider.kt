@@ -27,6 +27,8 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.net.URI
 import java.net.URLDecoder
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 class AnimeSailProvider : MainAPI() {
     override var mainUrl = "https://154.26.137.28"
@@ -78,7 +80,7 @@ class AnimeSailProvider : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = request(request.data + page).document
-        val home = document.select("article").map {
+        val home = document.select("div.listupd article, article").mapNotNull {
             it.toSearchResult()
         }
         return newHomePageResponse(request.name, home)
@@ -102,19 +104,49 @@ class AnimeSailProvider : MainAPI() {
         }
     }
 
-    private fun Element.toSearchResult(): AnimeSearchResponse {
-        val rawHref = fixUrlNull(this.selectFirst("a")?.attr("href")).toString()
+    private fun Element.toSearchResult(): AnimeSearchResponse? {
+        val linkElement = selectFirst(
+            ".tt > h2 > a, h2.entry-title > a, h2 > a, h3 > a, a[rel=bookmark], a[href]"
+        ) ?: return null
+
+        val rawHref = fixUrlNull(
+            linkElement.attr("href").ifBlank {
+                selectFirst("a[href]")?.attr("href")
+            }
+        ) ?: return null
         val href = getProperAnimeLink(rawHref)
-        val rawTitle = this.selectFirst(".tt > h2")?.text() ?: ""
+
+        val rawTitle = listOfNotNull(
+            selectFirst(".tt > h2")?.text(),
+            selectFirst("h2.entry-title")?.text(),
+            selectFirst("h2")?.text(),
+            selectFirst("h3")?.text(),
+            linkElement.attr("title").takeIf { it.isNotBlank() },
+            select("a[href]")
+                .map { it.text().trim() }
+                .filter { it.isNotBlank() && !it.equals("Next", true) && !it.equals("Previous", true) }
+                .maxByOrNull { it.length }
+        ).firstOrNull { !it.isNullOrBlank() }.orEmpty()
+
         val title = rawTitle.replace(Regex("(?i)Episode\\s?\\d+"), "")
             .replace(Regex("(?i)Subtitle Indonesia"), "")
             .replace(Regex("(?i)Sub Indo"), "")
             .trim()
             .removeSuffix("-")
             .trim()
-        val posterUrl = fixUrlNull(this.selectFirst("div.limit img")?.attr("src"))
+
+        if (title.isBlank()) return null
+
+        val posterUrl = fixUrlNull(
+            this.selectFirst("div.limit img, img.wp-post-image, img.attachment-post-thumbnail, img")
+                ?.attr("src")
+        )
         val epNum = Regex("(?i)Episode\\s?(\\d+)").find(rawTitle)?.groupValues?.getOrNull(1)?.toIntOrNull()
-        val typeText = this.selectFirst(".tt > span")?.text() ?: ""
+        val typeText = listOfNotNull(
+            this.selectFirst(".tt > span")?.text(),
+            this.selectFirst(".typez")?.text(),
+            this.text().takeIf { it.contains("·") }
+        ).joinToString(" ")
         val type = if (typeText.contains("Movie", ignoreCase = true)) TvType.AnimeMovie else TvType.Anime
         return newAnimeSearchResponse(title, href, type) {
             this.posterUrl = posterUrl
@@ -127,7 +159,7 @@ class AnimeSailProvider : MainAPI() {
         val link = "$mainUrl/?s=$query"
         val document = request(link).document
 
-        return document.select("div.listupd article").map {
+        return document.select("div.listupd article, article").mapNotNull {
             it.toSearchResult()
         }
     }
@@ -873,26 +905,61 @@ class AnimeSailProvider : MainAPI() {
 
 }
 
-class TurnstileInterceptor(private val targetCookie: String = "_as_turnstile") : Interceptor {
+class TurnstileInterceptor(
+    private val targetCookies: List<String> = listOf("cf_clearance", "_as_turnstile")
+) : Interceptor {
     companion object {
         private const val POLL_INTERVAL_MS = 500L
         private const val MAX_ATTEMPTS = 30
+        private const val PAGE_WAIT_SECONDS = 45L
     }
 
-    private fun getCookieValue(domainUrl: String): String? {
-        val raw = CookieManager.getInstance().getCookie(domainUrl) ?: return null
+    private fun getCookieHeader(url: String, domainUrl: String): String {
+        val manager = CookieManager.getInstance()
+        return manager.getCookie(url) ?: manager.getCookie(domainUrl) ?: ""
+    }
+
+    private fun getCookieValue(url: String, domainUrl: String): String? {
+        val raw = getCookieHeader(url, domainUrl)
+        if (raw.isBlank()) return null
         return raw.split(";")
             .map { it.trim() }
-            .firstOrNull { it.startsWith("$targetCookie=") }
-            ?.substringAfter("=")
-            ?.takeIf { it.isNotBlank() }
+            .firstNotNullOfOrNull { cookie ->
+                targetCookies.firstOrNull { target -> cookie.startsWith("$target=") }
+                    ?.let { cookie.substringAfter("=") }
+                    ?.takeIf { it.isNotBlank() }
+            }
     }
 
     private fun invalidateCookie(domainUrl: String) {
         CookieManager.getInstance().apply {
-            setCookie(domainUrl, "$targetCookie=; Max-Age=0")
+            targetCookies.forEach { cookie ->
+                setCookie(domainUrl, "$cookie=; Max-Age=0")
+            }
             flush()
         }
+    }
+
+    private fun hasChallenge(response: Response): Boolean {
+        if (response.code == 403 || response.code == 429 || response.code == 503) return true
+
+        val contentType = response.header("Content-Type").orEmpty()
+        if (!contentType.contains("text/html", ignoreCase = true)) return false
+
+        val preview = runCatching { response.peekBody(128 * 1024).string() }.getOrDefault("")
+        if (preview.isBlank()) return false
+
+        val challengeHints = listOf(
+            "cf-challenge",
+            "cf-browser-verification",
+            "cf_clearance",
+            "challenge-platform",
+            "Just a moment",
+            "Attention Required",
+            "turnstile",
+            "/cdn-cgi/challenge-platform/"
+        )
+        return challengeHints.any { preview.contains(it, ignoreCase = true) }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -901,13 +968,13 @@ class TurnstileInterceptor(private val targetCookie: String = "_as_turnstile") :
         val url = originalRequest.url.toString()
         val domainUrl = "${originalRequest.url.scheme}://${originalRequest.url.host}"
         val cookieManager = CookieManager.getInstance()
-        if (getCookieValue(domainUrl) != null) {
+        if (getCookieValue(url, domainUrl) != null) {
             val response = chain.proceed(
                 originalRequest.newBuilder()
-                    .header("Cookie", cookieManager.getCookie(domainUrl) ?: "")
+                    .header("Cookie", getCookieHeader(url, domainUrl))
                     .build()
             )
-            if (response.code != 403 && response.code != 503) return response
+            if (!hasChallenge(response)) return response
             response.close()
             invalidateCookie(domainUrl)
         }
@@ -918,30 +985,44 @@ class TurnstileInterceptor(private val targetCookie: String = "_as_turnstile") :
         val handler = Handler(Looper.getMainLooper())
         var webView: WebView? = null
         var resolvedUserAgent = originalRequest.header("User-Agent") ?: ""
+        val challengeLatch = CountDownLatch(1)
 
         handler.post {
             try {
                 val wv = WebView(context).also { webView = it }
+                CookieManager.getInstance().setAcceptCookie(true)
+                CookieManager.getInstance().setAcceptThirdPartyCookies(wv, true)
                 wv.settings.apply {
                     javaScriptEnabled = true
                     domStorageEnabled = true
+                    databaseEnabled = true
+                    javaScriptCanOpenWindowsAutomatically = true
+                    loadsImagesAutomatically = true
                     if (resolvedUserAgent.isNotBlank()) userAgentString = resolvedUserAgent
                     resolvedUserAgent = userAgentString
                 }
-                wv.webViewClient = WebViewClient()
+                wv.webViewClient = object : WebViewClient() {
+                    override fun onPageFinished(view: WebView, finishedUrl: String) {
+                        super.onPageFinished(view, finishedUrl)
+                        cookieManager.flush()
+                        if (getCookieValue(finishedUrl, domainUrl) != null) {
+                            challengeLatch.countDown()
+                        }
+                    }
+                }
                 wv.loadUrl(url)
             } catch (e: Exception) {
+                challengeLatch.countDown()
                 e.printStackTrace()
             }
         }
 
+        challengeLatch.await(PAGE_WAIT_SECONDS, TimeUnit.SECONDS)
+
         var attempts = 0
-        while (attempts < MAX_ATTEMPTS) {
+        while (attempts < MAX_ATTEMPTS && getCookieValue(url, domainUrl) == null) {
             Thread.sleep(POLL_INTERVAL_MS)
-            if (getCookieValue(domainUrl) != null) {
-                cookieManager.flush()
-                break
-            }
+            cookieManager.flush()
             attempts++
         }
 
@@ -958,12 +1039,16 @@ class TurnstileInterceptor(private val targetCookie: String = "_as_turnstile") :
             }
         }
 
-        val finalCookies = cookieManager.getCookie(domainUrl) ?: ""
-        return chain.proceed(
+        val finalCookies = getCookieHeader(url, domainUrl)
+        val finalResponse = chain.proceed(
             originalRequest.newBuilder()
                 .header("Cookie", finalCookies)
                 .apply { if (resolvedUserAgent.isNotBlank()) header("User-Agent", resolvedUserAgent) }
                 .build()
         )
+
+        if (!hasChallenge(finalResponse)) return finalResponse
+
+        return finalResponse
     }
 }
