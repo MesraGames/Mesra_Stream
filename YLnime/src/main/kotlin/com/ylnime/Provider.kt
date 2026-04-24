@@ -3,58 +3,61 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Element
 
-class YLNimeProvider : MainAPI() {
-    override val name: String = "YLNime"
-    override val mainUrl: String = "https://ylnime.com"
-    override val lang: String = "id"
-    override val hasMainPage: Boolean = true
-    override val hasChapters: Boolean = true
-    
-    override suspend fun getMainPage(): HomePageResponse {
-        val document = app.get(mainUrl).document
-        val allItems = document.select("div.eplister > ul > li").map { item ->
-            val title = item.selectFirst("h2")?.text() ?: ""
-            val link = item.selectFirst("a")?.attr("href") ?: ""
-            AnimeSearchResponse(
-                title = title,
-                link = link,
-                id = link
-            )
+class YLNime : MainAPI() {
+    override var mainUrl = "https://ylnime.com"
+    override var name = "YLNime"
+    override val hasMainPage = true
+    override var lang = "id"
+    override val supportedTypes = setOf(TvType.Anime, TvType.Movie, TvType.TvSeries)
+
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        val doc = app.get("https://ylnime.com/index.php?terbaru=1").document
+        val items = ArrayList<HomePageList>()
+        val lists = doc.select("div.lsm")
+        for (list in lists) {
+            val title = list.select("a.title").text().trim()
+            val href = list.select("a.title").attr("href")
+            val image = list.select("img.lazy").attr("data-src")
+            items.add(HomePageList(title, listOf(newAnimeSearchResponse(title, href, TvType.Anime) { this.posterUrl = image })))
         }
-        return HomePageResponse(allItems)
+        return newHomePageResponse(items)
     }
-    
+
     override suspend fun search(query: String): List<SearchResponse> {
-        val searchUrl = "$mainUrl/index.php?search=$query"
-        val document = app.get(searchUrl).document
-        return document.select("div.eplister > ul > li").map { item ->
-            val title = item.selectFirst("h2")?.text() ?: ""
-            val link = item.selectFirst("a")?.attr("href") ?: ""
-            AnimeSearchResponse(
-                title = title,
-                link = link,
-                id = link
-            )
+        val doc = app.get("https://ylnime.com/index.php?search=$query").document
+        val lists = doc.select("div.lsm")
+        val items = ArrayList<SearchResponse>()
+        for (list in lists) {
+            val title = list.select("a.title").text().trim()
+            val href = list.select("a.title").attr("href")
+            val image = list.select("img.lazy").attr("data-src")
+            items.add(newAnimeSearchResponse(title, href, TvType.Anime) { this.posterUrl = image })
+        }
+        return items
+    }
+
+    override suspend fun load(url: String): LoadResponse? {
+        val doc = app.get(url).document
+        val title = doc.select("h1.entry-title").text().trim()
+        val type = if (doc.select("span.type").text().contains("Movie")) TvType.Movie else TvType.Anime
+        val episodes = ArrayList<Episode>()
+        val eps = doc.select("div.eplist").select("li")
+        for (ep in eps) {
+            val episode = ep.select("a").attr("href")
+            episodes.add(Episode(ep.select("a").text().trim(), episode))
+        }
+        return newAnimeLoadResponse(title, url, type) { 
+            this.posterUrl = doc.select("img.featuredimg").attr("src")
+            addEpisodes(episodes)
         }
     }
-    
-    override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
-        val extractor = YLNimeExtractor()
-        val metadata = extractor.extractMetadata(document)
-        return LoadResponse(
-            name = metadata.title,
-            url = url,
-            type = TvType.Anime,
-            data = extractor.extractEpisodeLinks(document)
-        )
-    }
-    
+
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val extractor = YLNimeExtractor()
-        val links = extractor.extractEpisodeLinks(app.get(data).document)
-        for (link in links) {
-            callback.invoke(link)
+        extractor.getUrl(data, null)?.let { links ->
+            for (link in links) {
+                callback.invoke(link)
+            }
         }
         return true
     }

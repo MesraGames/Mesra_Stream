@@ -1,14 +1,12 @@
 package com.ylnime
-import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
+import com.lagradost.cloudstream3.plugins.Plugin
+import android.content.Context
 
-class YLNimeProviderPlugin : ProviderPlugin {
-    override val supportedTypes: List<TvType> = listOf(TvType.Anime)
-    override val api: MainAPI = YLNimeProvider()
-    override val id: String = "YLNime"
-    override val name: String = "YLNime"
-    
-    override fun getMainAPI(): MainAPI {
-        return YLNimeProvider()
+@CloudstreamPlugin
+class YLNimePlugin: Plugin() {
+    override fun load(context: Context) {
+        registerMainAPI(YLNime())
+        registerExtractorAPI(YLNimeExtractor())
     }
 }
