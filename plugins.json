@@ -1023,6 +1023,27 @@
         "name": "Winbu"
     },
     {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=ylnime.com&sz=%size%",
+        "fileHash": "sha256-9f33c08e68a6b6029f088eda0fff45e783c6d03b2d1caa2a4786823f70a0805a",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 7402,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "AI Scraper Generator"
+        ],
+        "tvTypes": [
+            "AsianDrama",
+            "TvSeries",
+            "Movie"
+        ],
+        "version": 1,
+        "internalName": "YLnime",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/YLnime.cs3",
+        "name": "YLnime"
+    },
+    {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://zoronime.online&size=%size%",
         "fileHash": "sha256-53c83987dca1e12076b5cd67ce3ba37e9c7eb99fc28b332be98019fbf94ab690",
         "apiVersion": 1,
