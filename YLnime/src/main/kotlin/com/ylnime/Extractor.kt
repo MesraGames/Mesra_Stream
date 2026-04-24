@@ -1,24 +1,26 @@
-package com.cloudstream.expressor
+import io.github.lucavernini.CloudstreamPlugin
+import io.github.lucavernini.extractor.SearchExtractor
+import io.github.lucavernini.extractor.VideoExtractor
+import io.github.lucavernini.extractor.VideoType
+import java.net.URL
+import java.util.regex.Pattern
+import kotlin.text.regex.groupValues
+import kotlin.text.trim
+import kotlin.text.replaceFirst
 
-import com.cloudstream.expressor.Extractor
-import com.cloudstream.expressor.Video
-import com.cloudstream.expressor.VideoExtractor
-import com.cloudstream.expressor.utils.Http
-import com.cloudstream.expressor.utils.Http.Request
-import com.cloudstream.expressor.utils.Json
-import com.lambdapioneer.exductor.extended.VideoExtractor
-
-class YLnimeExtractor : VideoExtractor("https://ylnime.com") {
-    override fun extract(id: String, initialUrl: String): List<Video> {
-        val url = "$initialUrl?id=$id"
-        val soup = Http.get(url).soup()
-        val videos = mutableListOf<Video>()
-        val sources = soup.select("source")
-        for (source in sources) {
-            val videoUrl = source.attr("src")
-            val quality = if (source.attr("res") != "") source.attr("res") else "Unknown"
-            videos.add(Video(videoUrl, quality))
-        }
-        return videos
+object YLnimeExtractor : VideoExtractor() {
+  override suspend fun url(url: String): VideoType? {
+    val html = getHtml(url)
+    val title = html.selectFirst("h1.entry-title").text().trim()
+    val urlVideo = html.selectFirst("iframe[src]").attr("src")
+    val videoUrl = URL(urlVideo).readText().trim()
+    val regex = Pattern.compile("file: "+"([^"]+)")
+    val matcher = regex.matcher(videoUrl)
+    if (matcher.find()) {
+      val videoLink = matcher.group(1)
+      return VideoType.Video(url, title, groupValues = videoLink)
+    } else {
+      throw Exception("No video link found")
     }
+  }
 }

@@ -1,7 +1,7 @@
+import com.lagradost.cloudstream3.plugins.makePlugin
+
 // use an integer for version numbers
 version = 1
-
-import com.lagradost.cloudstream3.plugins.makePlugin
 
 cloudstream {
     language = "id"
