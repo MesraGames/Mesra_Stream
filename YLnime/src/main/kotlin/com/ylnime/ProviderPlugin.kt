@@ -1,27 +1,14 @@
-import com.lagradost.cloudstream3.MainAPI
-import com.lagradost.cloudstream3.ProviderPlugin
-import com.lagradost.cloudstream3.utils.AppUtils
-class YLNimePlugin : ProviderPlugin {
-    override fun getMainUrl(): String {
-        return "https://ylnime.com"
-    }
+package com.ylnime
+import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.utils.*
 
-    override fun withPlugin(): Boolean {
-        return true
-    }
-
-    override fun getName(): String {
-        return "YLNime"
-    }
-
-    override fun getApi(): MainAPI {
-        return YLNime()
-    }
-
-    override fun getViewModel(): Any {
-        return null
-    }
-
-    override fun onCreate(app: AppUtils) {
+class YLNimeProviderPlugin : ProviderPlugin {
+    override val supportedTypes: List<TvType> = listOf(TvType.Anime)
+    override val api: MainAPI = YLNimeProvider()
+    override val id: String = "YLNime"
+    override val name: String = "YLNime"
+    
+    override fun getMainAPI(): MainAPI {
+        return YLNimeProvider()
     }
 }

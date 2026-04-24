@@ -1,61 +1,61 @@
-import com.lagradost.cloudstream3.MainAPI
-import com.lagradost.cloudstream3.apis.AnimeApi
-import com.lagradost.cloudstream3.apis.AnimeSearchResponse
-import com.lagradost.cloudstream3.apis.AnimeSearchRequest
-import com.lagradost.cloudstream3.apis.Episode
-import com.lagradost.cloudstream3.apis.MovieSearchResponse
-import com.lagradost.cloudstream3.apis.TvType
-import com.lagradost.cloudstream3.utils.AppUtils
-import com.lagradost.cloudstream3.utils.SplitPair
-import org.jsoup.nodes.Document
-import com.lagradost.cloudstream3.utils.JsoupUtils
-import java.util.ArrayList
-import java.util.TimeUnit
-import java.util.concurrent.TimeUnit
-import kotlin.math.min
+package com.ylnime
+import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.utils.*
+import org.jsoup.nodes.Element
 
-class YLNime : MainAPI() {
-    companion object {
-        private const val mainUrl = "https://ylnime.com"
-    }
-    override fun getMainUrl(): String {
-        return mainUrl
-    }
-    override fun getDisplayName(): String {
-        return "YLNime"
-    }
-    override fun search(query: AnimeSearchRequest): AnimeSearchResponse {
-        val soup = JsoupUtils.fetch(url = "$mainUrl/?s=$query=search")
-        val results: ArrayList<SplitPair> = ArrayList()
-        soup.select("div.post > h2 > a").forEach { element ->
-            val title = element.text().trim()
-            val href = element.attr("href")
-            results.add(SplitPair(title, href))
+class YLNimeProvider : MainAPI() {
+    override val name: String = "YLNime"
+    override val mainUrl: String = "https://ylnime.com"
+    override val lang: String = "id"
+    override val hasMainPage: Boolean = true
+    override val hasChapters: Boolean = true
+    
+    override suspend fun getMainPage(): HomePageResponse {
+        val document = app.get(mainUrl).document
+        val allItems = document.select("div.eplister > ul > li").map { item ->
+            val title = item.selectFirst("h2")?.text() ?: ""
+            val link = item.selectFirst("a")?.attr("href") ?: ""
+            AnimeSearchResponse(
+                title = title,
+                link = link,
+                id = link
+            )
         }
-        return AnimeSearchResponse(results)
+        return HomePageResponse(allItems)
     }
-
-    override fun load(url: String): String {
-        if (url.contains("episode-")) {
-            return "${url}episode-"
+    
+    override suspend fun search(query: String): List<SearchResponse> {
+        val searchUrl = "$mainUrl/index.php?search=$query"
+        val document = app.get(searchUrl).document
+        return document.select("div.eplister > ul > li").map { item ->
+            val title = item.selectFirst("h2")?.text() ?: ""
+            val link = item.selectFirst("a")?.attr("href") ?: ""
+            AnimeSearchResponse(
+                title = title,
+                link = link,
+                id = link
+            )
         }
-        return url
     }
-    override fun loadLinks(episode: Episode, callback: (ExtractorLink) -> Unit) {
-        val document: Document = JsoupUtils.fetch(url = episode.url)
-        val scriptTag = document.select("script").last()
-        val link: String? = scriptTag?.text()?.let {
-            Regex("(https?://[^"]+)").find(it)?.group(1)
+    
+    override suspend fun load(url: String): LoadResponse {
+        val document = app.get(url).document
+        val extractor = YLNimeExtractor()
+        val metadata = extractor.extractMetadata(document)
+        return LoadResponse(
+            name = metadata.title,
+            url = url,
+            type = TvType.Anime,
+            data = extractor.extractEpisodeLinks(document)
+        )
+    }
+    
+    override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+        val extractor = YLNimeExtractor()
+        val links = extractor.extractEpisodeLinks(app.get(data).document)
+        for (link in links) {
+            callback.invoke(link)
         }
-        if (link != null) {
-            callback.invoke(ExtractorLink(
-                "YLNime",
-                link,
-                link,
-                "",
-                null,
-                false
-            ))
-        }
+        return true
     }
 }

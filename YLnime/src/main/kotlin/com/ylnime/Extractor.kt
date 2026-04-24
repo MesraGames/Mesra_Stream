@@ -1,32 +1,33 @@
-import com.lagradost.cloudstream3.extractors.YLNimeExtractor
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils QUALITY_1080p
-import com.lagradost.cloudstream3.utils QUALITY_720p
-import com.lagradost.cloudstream3.utils QUALITY_HD
-class YLNimeExtractor : VideoExtractor() {
-    override fun getVideoUrl(): String? {
-        val scriptTag = document.querySelector("script")
-        return scriptTag?.text()?.let { Regex("(https?://[^"]+)").find(it)?.group(1) }
-    }
+package com.ylnime
+import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.utils.*
+import org.jsoup.nodes.Element
 
-    override fun getVideoExtractorUrl(): String? {
-        return "https://ylnime.com/ajax/get_link.php"
+class YLNimeExtractor : Extractor {
+    override val name: String = "YLNime"
+    override val mainUrl: String = "https://ylnime.com"
+    
+    override suspend fun urlValid(url: String): Boolean {
+        return true
     }
-
-    override fun getVideoDownloadUrl(): String? {
-        return getVideoUrl()
-    }
-
-    override fun getVideoExtractors(): List<ExtractorLink> {
-        return listOf(
-            ExtractorLink(
-                "ylnime",
-                "https://ylnime.com/ajax/get_link.php",
-                getVideoExtractorUrl(),
-                null,
-                QUALITY_HD,
-                false
-            )
+    
+    override suspend fun extractMetadata(element: Element): Metadata {
+        val title = element.selectFirst("h2")?.text()
+        return Metadata(
+            title = title ?: "",
+            plot = element.selectFirst("div Plot")?.text() ?: "",
+            coverUrl = element.selectFirst("div.thumbnail > img")?.attr("src") ?: "",
         )
+    }
+    
+    override suspend fun extractEpisodeLinks(element: Element): List<ExtractorLink> {
+        return element.select("div.eplister > ul > li").map { link ->
+            ExtractorLink(
+                link.attr("data-id"),
+                link.selectFirst("a")?.attr("href") ?: "",
+                link.selectFirst("span.status")?.text() ?: "",
+                link.selectFirst("img")?.attr("src") ?: ""
+            )
+        }
     }
 }
