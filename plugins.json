@@ -1024,10 +1024,10 @@
     },
     {
         "iconUrl": "https://www.google.com/s2/favicons?domain=ylnime.com&sz=%size%",
-        "fileHash": "sha256-868babd2e8e49ea5382327f22c447eb5e7b5eec1eb7c5e61856df33547bdf4c3",
+        "fileHash": "sha256-bd05f68e62cb8b76d26edb9e2b67bff8ebced9288e4d3d223e43f9580541243b",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 10070,
+        "fileSize": 9439,
         "status": 1,
         "language": "id",
         "authors": [
