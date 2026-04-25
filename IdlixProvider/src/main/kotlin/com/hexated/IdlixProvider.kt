@@ -24,6 +24,7 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.base64Decode
 import com.lagradost.cloudstream3.getQualityFromString
 import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
@@ -35,12 +36,18 @@ import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.security.MessageDigest
 import java.text.Normalizer
+import java.util.Base64
+import javax.crypto.Cipher
+import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
 class IdlixProvider : MainAPI() {
     override var mainUrl = base64Decode("aHR0cHM6Ly96MS5pZGxpeGt1LmNvbQ==")
@@ -48,6 +55,9 @@ class IdlixProvider : MainAPI() {
     override val hasMainPage = true
     override var lang = "id"
     override val hasDownloadSupport = true
+
+    private val cloudflareInterceptor by lazy { CloudflareKiller() }
+
     override val supportedTypes = setOf(
         TvType.Movie,
         TvType.TvSeries,
@@ -302,7 +312,11 @@ class IdlixProvider : MainAPI() {
         val contentType = parsed.type
 
         val ts = System.currentTimeMillis()
-        val aclrRes = app.get("$mainUrl/pagead/ad_frame.js?_=$ts").text
+        val aclrRes = app.get(
+            "$mainUrl/pagead/ad_frame.js?_=$ts",
+            referer = mainUrl,
+            interceptor = cloudflareInterceptor
+        ).text
         val aclr = Regex("""__aclr\s*=\s*"([a-f0-9]+)"""")
             .find(aclrRes)
             ?.groupValues?.getOrNull(1)
@@ -323,11 +337,18 @@ class IdlixProvider : MainAPI() {
             "user-agent" to USER_AGENT,
         )
 
-        val challengeRes = app.post(
+        val challengeText = app.post(
             "$mainUrl/api/watch/challenge",
             requestBody = challengejson.toRequestBody("application/json".toMediaType()),
-            headers = headers
-        ).parsedSafe<ChallengeResponse>() ?: return false
+            headers = headers,
+            interceptor = cloudflareInterceptor
+        ).text
+
+        val challengeRes = AppUtils.tryParseJson<ChallengeResponse>(challengeText)
+            ?: run {
+                Log.d(name, "Idlix challenge parse failed: ${challengeText.take(200)}")
+                return false
+            }
 
         val nonce = solvePow(
             challengeRes.challenge,
@@ -351,26 +372,84 @@ class IdlixProvider : MainAPI() {
                 "origin" to mainUrl,
                 "referer" to mainUrl,
                 "user-agent" to USER_AGENT,
-            )
+            ),
+            interceptor = cloudflareInterceptor
         ).text
 
-        val json = JSONObject(solveRes)
+        val embedUrl = extractUrlFromSolveResponse(solveRes) ?: return false
 
-        val embedUrl = when {
-            json.has("embedUrl") -> json.optString("embedUrl")
-            json.has("url") -> json.optString("url")
-            else -> null
-        } ?: return false
+        val embedPageUrl = when {
+            embedUrl.startsWith("http", ignoreCase = true) -> embedUrl
+            embedUrl.startsWith("/") -> "$mainUrl$embedUrl"
+            else -> "$mainUrl/$embedUrl"
+        }
 
-        val iframeurl = WebViewResolver(
-            interceptUrl = Regex("""/video/"""),
-            additionalUrls = listOf(Regex("""/video/""")),
+        val resolver = WebViewResolver(
+            interceptUrl = Regex(
+                """https?://[^"'\\s]+(?:\.m3u8|\.mp4)[^"'\\s]*""",
+                RegexOption.IGNORE_CASE
+            ),
+            additionalUrls = listOf(
+                Regex("""https?://[^"'\\s]+\.m3u8[^"'\\s]*""", RegexOption.IGNORE_CASE),
+                Regex("""https?://[^"'\\s]+\.mp4[^"'\\s]*""", RegexOption.IGNORE_CASE),
+                Regex("""https?://(?:[a-z0-9-]+\.)*(?:majorplay\.net|jeniusplay\.com)[^"'\\s]*""", RegexOption.IGNORE_CASE),
+            ),
             useOkhttp = false,
-            timeout = 15_000L
+            timeout = 20_000L
         )
 
-        val finalUrl = app.get("$mainUrl${embedUrl}", interceptor = iframeurl).url
-        loadExtractor(finalUrl, mainUrl, subtitleCallback, callback)
+        val resolvedUrl = app.get(embedPageUrl, referer = mainUrl, interceptor = resolver)
+            .url
+            .substringBefore('#')
+
+        when {
+            resolvedUrl.contains(".m3u8", ignoreCase = true) -> {
+                generateM3u8(name, resolvedUrl, embedPageUrl).forEach(callback)
+                return true
+            }
+
+            resolvedUrl.contains(".mp4", ignoreCase = true) -> {
+                callback(
+                    newExtractorLink(
+                        source = name,
+                        name = "$name Auto",
+                        url = resolvedUrl,
+                    ) {
+                        referer = embedPageUrl
+                    }
+                )
+                return true
+            }
+        }
+
+        // Fallback kalau WebView tidak menemukan URL media / pattern redirect berubah.
+        if (resolvedUrl == embedPageUrl || resolvedUrl.startsWith(mainUrl, ignoreCase = true)) {
+            val embedRes = app.get(embedPageUrl, referer = mainUrl, interceptor = cloudflareInterceptor)
+            val doc = embedRes.document
+            val iframeSrc = doc.selectFirst("iframe[src]")?.attr("abs:src")?.trim().orEmpty()
+            val sourceSrc = doc.selectFirst("video source[src], source[src]")?.attr("abs:src")?.trim().orEmpty()
+            val scriptUrl = Regex("""https?://(?:[a-z0-9-]+\.)*(?:majorplay\.net|jeniusplay\.com|[a-z0-9.-]+/(?:embed|player|video|play))[^"'\\s]*""", RegexOption.IGNORE_CASE)
+                .find(doc.select("script").joinToString("\n") { it.data() })
+                ?.value
+                ?.trim()
+                .orEmpty()
+            val decryptedSrc = decryptEmbeddedUrl(embedRes.text).orEmpty()
+            val picked = listOf(decryptedSrc, iframeSrc, sourceSrc, scriptUrl)
+                .firstOrNull { it.startsWith("http", ignoreCase = true) }
+            if (picked != null) {
+                if (emitDirectMediaLinks(picked, embedPageUrl, callback)) {
+                    return true
+                }
+                loadExtractor(picked, embedPageUrl, subtitleCallback, callback)
+                return true
+            }
+        }
+
+        if (emitDirectMediaLinks(resolvedUrl, embedPageUrl, callback)) {
+            return true
+        }
+
+        loadExtractor(resolvedUrl, embedPageUrl, subtitleCallback, callback)
         return true
     }
 
@@ -392,6 +471,135 @@ class IdlixProvider : MainAPI() {
     fun sha256(input: String): String {
         val bytes = MessageDigest.getInstance("SHA-256").digest(input.toByteArray())
         return bytes.joinToString("") { "%02x".format(it) }
+    }
+
+    private fun extractUrlFromSolveResponse(raw: String): String? {
+        val trimmed = raw.trim()
+        if (trimmed.startsWith("http", ignoreCase = true)) return trimmed
+
+        val normalized = trimmed.replace("\\/", "/")
+        val direct = Regex("""https?://[^"'\\s]+""", RegexOption.IGNORE_CASE).find(normalized)?.value
+        if (!direct.isNullOrBlank()) return direct
+
+        val json = runCatching { JSONObject(trimmed) }.getOrNull() ?: return null
+        val candidates = listOf(
+            json.optString("embedUrl"),
+            json.optString("url"),
+            json.optString("streamUrl"),
+            json.optString("playbackUrl"),
+            json.optJSONObject("data")?.optString("embedUrl"),
+            json.optJSONObject("data")?.optString("url"),
+            json.optJSONObject("result")?.optString("embedUrl"),
+            json.optJSONObject("result")?.optString("url"),
+        )
+        return candidates.firstOrNull { !it.isNullOrBlank() }
+    }
+
+    private fun decryptEmbeddedUrl(html: String): String? {
+        val dataA = Regex("""data-a=["']([a-fA-F0-9]{32})["']""").find(html)?.groupValues?.getOrNull(1)
+        val dataP = Regex("""data-p=["']([^"']+)["']""").find(html)?.groupValues?.getOrNull(1)
+        val dataV = Regex("""data-v=["']([^"']+)["']""").find(html)?.groupValues?.getOrNull(1)
+        val cssSecret = Regex("""--_[a-z0-9]+:\s*["']([a-fA-F0-9]{32})["']""", RegexOption.IGNORE_CASE)
+            .find(html)
+            ?.groupValues
+            ?.getOrNull(1)
+
+        if (dataA.isNullOrBlank() || dataP.isNullOrBlank() || dataV.isNullOrBlank() || cssSecret.isNullOrBlank()) {
+            return null
+        }
+
+        val keyHex = dataA + cssSecret
+        val keyBytes = runCatching { hexToBytes(keyHex) }.getOrNull() ?: return null
+        val cipherBytes = runCatching { Base64.getDecoder().decode(dataP) }.getOrNull() ?: return null
+        val ivBytes = runCatching { Base64.getDecoder().decode(dataV) }.getOrNull() ?: return null
+
+        val plain = runCatching {
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(
+                Cipher.DECRYPT_MODE,
+                SecretKeySpec(keyBytes, "AES"),
+                GCMParameterSpec(128, ivBytes)
+            )
+            String(cipher.doFinal(cipherBytes))
+        }.getOrNull() ?: return null
+
+        return plain.trim().takeIf { it.startsWith("http", ignoreCase = true) }
+    }
+
+    private fun hexToBytes(hex: String): ByteArray {
+        require(hex.length % 2 == 0)
+        return ByteArray(hex.length / 2) { index ->
+            hex.substring(index * 2, index * 2 + 2).toInt(16).toByte()
+        }
+    }
+
+    private suspend fun emitDirectMediaLinks(
+        targetUrl: String,
+        refererUrl: String,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
+        val cleaned = targetUrl.substringBefore('#').trim()
+        if (cleaned.isBlank()) return false
+
+        if (cleaned.contains(".m3u8", ignoreCase = true)) {
+            generateM3u8(name, cleaned, refererUrl).forEach(callback)
+            return true
+        }
+
+        if (cleaned.contains(".mp4", ignoreCase = true)) {
+            callback(
+                newExtractorLink(
+                    source = name,
+                    name = "$name Auto",
+                    url = cleaned,
+                ) {
+                    referer = refererUrl
+                }
+            )
+            return true
+        }
+
+        val isMajorplayEmbed = Regex("""https?://(?:[a-z0-9-]+\.)*majorplay\.net/embed/""", RegexOption.IGNORE_CASE)
+            .containsMatchIn(cleaned)
+        if (!isMajorplayEmbed) return false
+
+        val doc = runCatching {
+            app.get(cleaned, referer = refererUrl, interceptor = cloudflareInterceptor).document
+        }.getOrNull() ?: return false
+
+        val sourceSrc = doc.selectFirst("video source[src], source[src]")?.attr("abs:src")?.trim().orEmpty()
+        val scriptData = doc.select("script").joinToString("\n") { it.data() }
+        val hlsFromScript = Regex(
+            """["']hlsUrl["']\s*:\s*["'](https?://[^"']+\.m3u8[^"']*)["']""",
+            RegexOption.IGNORE_CASE
+        )
+            .find(scriptData)
+            ?.groupValues
+            ?.getOrNull(1)
+            ?.replace("\\/", "/")
+            ?.trim()
+            .orEmpty()
+
+        val streamUrl = listOf(sourceSrc, hlsFromScript).firstOrNull { it.startsWith("http", ignoreCase = true) }
+            ?: return false
+
+        return if (streamUrl.contains(".m3u8", ignoreCase = true)) {
+            generateM3u8(name, streamUrl, cleaned).forEach(callback)
+            true
+        } else if (streamUrl.contains(".mp4", ignoreCase = true)) {
+            callback(
+                newExtractorLink(
+                    source = name,
+                    name = "$name Auto",
+                    url = streamUrl,
+                ) {
+                    referer = cleaned
+                }
+            )
+            true
+        } else {
+            false
+        }
     }
 }
 
