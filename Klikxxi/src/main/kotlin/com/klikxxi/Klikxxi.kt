@@ -55,25 +55,58 @@ class Klikxxi : MainAPI() {
 
     // Use CloudflareKiller here to avoid blocking main-page loads with a WebView flow.
     private val cloudflareInterceptor by lazy { CloudflareKiller() }
+    private val turnstileInterceptor by lazy { KlikxxiTurnstileInterceptor() }
     private val defaultHeaders = mapOf(
         "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
         "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36"
     )
+
+    private fun looksLikeChallenge(html: String?): Boolean {
+        val preview = html?.take(128 * 1024).orEmpty()
+        if (preview.isBlank()) return false
+        val hints = listOf(
+            "cf-challenge",
+            "cf-browser-verification",
+            "challenge-platform",
+            "Performing security verification",
+            "Verifying you are human",
+            "Just a moment",
+            "Attention Required",
+            "/cdn-cgi/challenge-platform/"
+        )
+        return hints.any { preview.contains(it, ignoreCase = true) }
+    }
 
     private suspend fun request(
         url: String,
         ref: String? = null,
         timeoutSeconds: Long = DEFAULT_TIMEOUT_SECONDS
     ): NiceResponse {
-        val response = app.get(
+        val first = app.get(
             url,
             interceptor = cloudflareInterceptor,
             headers = defaultHeaders,
             referer = ref,
             timeout = timeoutSeconds
         )
-        updateCfCookieHeader(response.cookies)
-        return response
+        updateCfCookieHeader(first.cookies)
+        mainUrl = runCatching { getBaseUrl(first.url) }.getOrDefault(mainUrl)
+
+        // If CloudflareKiller still returns a challenge page, retry using WebView Turnstile flow.
+        if (looksLikeChallenge(first.text)) {
+            val second = app.get(
+                url,
+                interceptor = turnstileInterceptor,
+                headers = defaultHeaders,
+                referer = ref,
+                timeout = timeoutSeconds
+            )
+            updateCfCookieHeader(second.cookies)
+            mainUrl = runCatching { getBaseUrl(second.url) }.getOrDefault(mainUrl)
+            return second
+        }
+
+        return first
     }
 
     private suspend fun requestPost(
@@ -82,7 +115,7 @@ class Klikxxi : MainAPI() {
         ref: String? = null,
         timeoutSeconds: Long = DEFAULT_TIMEOUT_SECONDS
     ): NiceResponse {
-        val response = app.post(
+        val first = app.post(
             url,
             interceptor = cloudflareInterceptor,
             headers = defaultHeaders,
@@ -90,8 +123,24 @@ class Klikxxi : MainAPI() {
             data = data,
             timeout = timeoutSeconds
         )
-        updateCfCookieHeader(response.cookies)
-        return response
+        updateCfCookieHeader(first.cookies)
+        mainUrl = runCatching { getBaseUrl(first.url) }.getOrDefault(mainUrl)
+
+        if (looksLikeChallenge(first.text)) {
+            val second = app.post(
+                url,
+                interceptor = turnstileInterceptor,
+                headers = defaultHeaders,
+                referer = ref,
+                data = data,
+                timeout = timeoutSeconds
+            )
+            updateCfCookieHeader(second.cookies)
+            mainUrl = runCatching { getBaseUrl(second.url) }.getOrDefault(mainUrl)
+            return second
+        }
+
+        return first
     }
     
 
@@ -119,10 +168,19 @@ class Klikxxi : MainAPI() {
 
     val document = request(url, timeoutSeconds = LIST_TIMEOUT_SECONDS).document
 
-    val items = document.select(
+    val primary = document.select(
         "article.has-post-thumbnail, article.item, article.item-infinite, div.latestMovie article, div.latestSeri article"
     )
-        .mapNotNull { it.toSearchResult() }
+    var items = primary.mapNotNull { it.toSearchResult() }
+
+    if (items.isEmpty()) {
+        val fallback = document.select(
+            "div.items article, div#archive-content article, div.items div.item, div.items .item, " +
+                "article, div.item, li.item, div.movie-item"
+        )
+        items = (fallback.mapNotNull { it.toSearchResult() } + fallback.mapNotNull { it.toSearchResultFallback() })
+            .distinctBy { it.url }
+    }
 
     return newHomePageResponse(request.name, items)
 }
@@ -147,6 +205,8 @@ class Klikxxi : MainAPI() {
             selectFirst("h2")?.text(),
             selectFirst("h3")?.text(),
             linkElement.attr("title").takeIf { it.isNotBlank() },
+            selectFirst("img[alt]")?.attr("alt")?.takeIf { it.isNotBlank() },
+            selectFirst("img[title]")?.attr("title")?.takeIf { it.isNotBlank() },
             select("a[href]")
                 .map { it.text().trim() }
                 .filter {
@@ -167,9 +227,13 @@ class Klikxxi : MainAPI() {
         if (title.isBlank()) return null
 
         // Poster – support src, srcset, data-lazy-src, dll + ambil resolusi terbesar
-        val posterElement = this.selectFirst("img.wp-post-image, img.attachment-large, img")
+        val posterElement = this.selectFirst(
+            "a[href] img.wp-post-image, a[href] img.attachment-large, a[href] img[data-lazy-src], " +
+                "a[href] img[data-src], .gmr-box-content img, .thumbnail img, img.wp-post-image, " +
+                "img.attachment-large, img"
+        )
         val posterUrl = posterElement?.fixPoster()?.let { fixUrl(it) }
-        val posterHeaders = posterUrl?.let { posterHeaders() }
+        val posterHeaders = posterUrl?.let(::posterHeaders)
 
         val quality = this.selectFirst(".gmr-quality-item")?.let { el ->
     // 1. Check if text directly available: <div class="gmr-quality-item">HD</div>
@@ -221,6 +285,30 @@ class Klikxxi : MainAPI() {
         }
     }
 
+    private fun Element.toSearchResultFallback(): SearchResponse? {
+        val anchor = selectFirst("a[href]") ?: return null
+        val hrefRaw = anchor.attr("href").trim()
+        if (hrefRaw.isBlank() || hrefRaw.startsWith("#")) return null
+        val href = fixUrl(hrefRaw)
+
+        val title = listOfNotNull(
+            anchor.attr("title").takeIf { it.isNotBlank() },
+            anchor.attr("aria-label").takeIf { it.isNotBlank() },
+            selectFirst("img[alt]")?.attr("alt")?.trim()?.takeIf { it.isNotBlank() },
+            selectFirst("img[title]")?.attr("title")?.trim()?.takeIf { it.isNotBlank() }
+        ).firstOrNull()?.trim().orEmpty()
+        if (title.isBlank()) return null
+
+        val posterElement = selectFirst("img") ?: return null
+        val posterUrl = posterElement.fixPoster()?.let(::fixUrl)
+        val posterHeaders = posterUrl?.let(::posterHeaders)
+
+        return newMovieSearchResponse(title, href, TvType.Movie) {
+            this.posterUrl = posterUrl
+            this.posterHeaders = posterHeaders
+        }
+    }
+
     override suspend fun search(query: String): List<SearchResponse> {
         val document = request("$mainUrl/?s=$query", timeoutSeconds = LIST_TIMEOUT_SECONDS).document
         return document.select("article.item, article.has-post-thumbnail, article.item-infinite")
@@ -231,9 +319,13 @@ class Klikxxi : MainAPI() {
     private fun Element.toRecommendResult(): SearchResponse? {
         val title = this.selectFirst("h2.entry-title > a")?.text()?.trim() ?: return null
         val href = this.selectFirst("a")!!.attr("href")
-        val posterElement = this.selectFirst("img.wp-post-image, img.attachment-large, img")
+        val posterElement = this.selectFirst(
+            "a[href] img.wp-post-image, a[href] img.attachment-large, a[href] img[data-lazy-src], " +
+                "a[href] img[data-src], .gmr-box-content img, .thumbnail img, img.wp-post-image, " +
+                "img.attachment-large, img"
+        )
         val posterUrl = posterElement?.fixPoster()?.let { fixUrl(it) }
-        val posterHeaders = posterUrl?.let { posterHeaders() }
+        val posterHeaders = posterUrl?.let(::posterHeaders)
         return newMovieSearchResponse(title, href, TvType.Movie) {
             this.posterUrl = posterUrl
             this.posterHeaders = posterHeaders
@@ -263,6 +355,7 @@ class Klikxxi : MainAPI() {
             .selectFirst("figure.pull-left > img, .mvic-thumb img, .poster img, .gmr-movie-data img, .thumb img, img.wp-post-image")
             .fixPoster()
             ?.let { fixUrl(it) }
+            ?: document.selectFirst("meta[property=og:image], meta[name=twitter:image]")?.attr("content")?.let(::fixUrl)
 
         val description = listOfNotNull(
             document.selectFirst(
@@ -363,7 +456,7 @@ class Klikxxi : MainAPI() {
         return if (tvType == TvType.TvSeries) {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
-                this.posterHeaders = poster?.let { posterHeaders() }
+                this.posterHeaders = poster?.let(::posterHeaders)
                 this.plot = description
                 this.tags = tags
                 this.year = year
@@ -374,7 +467,7 @@ class Klikxxi : MainAPI() {
         } else {
             newMovieLoadResponse(title, url, TvType.Movie, url) {
                 this.posterUrl = poster
-                this.posterHeaders = poster?.let { posterHeaders() }
+                this.posterHeaders = poster?.let(::posterHeaders)
                 this.plot = description
                 this.tags = tags
                 this.year = year
@@ -433,61 +526,65 @@ class Klikxxi : MainAPI() {
 
     /** Ambil URL poster terbaik (srcset terbesar, data-lazy-src, dst) */
     private fun Element?.fixPoster(): String? {
-    if (this == null) return null
+        if (this == null) return null
 
-    fun pickFromSrcset(value: String?): String? {
-        if (value.isNullOrBlank()) return null
-        val srcset = value.trim()
-        val best = srcset.split(",")
-            .map { it.trim().split(" ")[0] }
-            .lastOrNull()
-        return best?.takeIf {
-            it.isNotBlank() &&
-                !it.startsWith("data:", true) &&
-                !it.contains("placeholder", true) &&
-                !it.endsWith(".svg", true)
+        fun isValidPosterCandidate(value: String?): Boolean {
+            if (value.isNullOrBlank()) return false
+            val lower = value.trim().lowercase()
+            return !lower.startsWith("data:") &&
+                !lower.contains("placeholder") &&
+                !lower.contains("transparent") &&
+                !lower.contains("spinner") &&
+                !lower.contains("/logo") &&
+                !lower.contains("avatar") &&
+                !lower.endsWith(".svg") &&
+                !lower.endsWith(".gif")
         }
-    }
 
-    // Prioritas 1: srcset variants
-    val bestSrcset = pickFromSrcset(
-        when {
-            this.hasAttr("data-lazy-srcset") -> this.attr("data-lazy-srcset")
-            this.hasAttr("data-srcset") -> this.attr("data-srcset")
-            this.hasAttr("srcset") -> this.attr("srcset")
-            else -> null
+        fun normalizeCandidate(value: String?): String? {
+            return value
+                ?.substringBefore(" ")
+                ?.trim()
+                ?.takeIf(::isValidPosterCandidate)
+                ?.fixImageQuality()
+                ?.let(::fixUrl)
+                ?.let(::normalizePosterUrl)
         }
-    )
-    if (!bestSrcset.isNullOrBlank()) {
-        return normalizePosterUrl(fixUrl(bestSrcset.fixImageQuality()))
-    }
 
-    // Prioritas 2: data-src atau data-lazy
-    val dataSrc = listOfNotNull(
-        when {
-        this.hasAttr("data-lazy-src") -> this.attr("data-lazy-src")
-        this.hasAttr("data-src") -> this.attr("data-src")
-        this.hasAttr("data-original") -> this.attr("data-original")
-        this.hasAttr("data-cfsrc") -> this.attr("data-cfsrc")
-        else -> null
-        },
-        this.attr("src").takeIf { it.isNotBlank() && !it.startsWith("data:", true) }
-    ).firstOrNull {
-        !it.isNullOrBlank() &&
-            !it.startsWith("data:", true) &&
-            !it.contains("placeholder", true) &&
-            !it.endsWith(".svg", true)
-    }
-    if (!dataSrc.isNullOrBlank()) return normalizePosterUrl(fixUrl(dataSrc.fixImageQuality()))
+        fun pickFromSrcset(vararg values: String?): String? {
+            return values
+                .firstNotNullOfOrNull { raw ->
+                    raw?.takeIf { it.isNotBlank() }?.split(",")
+                        ?.mapNotNull { item -> normalizeCandidate(item.substringBeforeLast(" ", item)) }
+                        ?.lastOrNull()
+                }
+        }
 
-    // Prioritas 3: src biasa
-    val src = this.attr("src")
-    if (!src.isNullOrBlank() && !src.startsWith("data:", true) && !src.endsWith(".svg", true)) {
-        return normalizePosterUrl(fixUrl(src.fixImageQuality()))
-    }
+        val bestSrcset = pickFromSrcset(
+            attr("abs:data-lazy-srcset"),
+            attr("abs:data-srcset"),
+            attr("abs:srcset"),
+            attr("data-lazy-srcset"),
+            attr("data-srcset"),
+            attr("srcset")
+        )
+        if (!bestSrcset.isNullOrBlank()) return bestSrcset
 
-    return null
-}
+        return listOf(
+            attr("abs:data-lazy-src"),
+            attr("abs:data-src"),
+            attr("abs:data-original"),
+            attr("abs:data-cfsrc"),
+            attr("abs:data-lazyloaded"),
+            attr("data-lazy-src"),
+            attr("data-src"),
+            attr("data-original"),
+            attr("data-cfsrc"),
+            attr("data-lazyloaded"),
+            attr("abs:src"),
+            attr("src")
+        ).firstNotNullOfOrNull(::normalizeCandidate)
+    }
 
     /** Ambil src untuk iframe, support data-litespeed-src */
     private fun Element?.getIframeAttr(): String? {
@@ -502,18 +599,28 @@ class Klikxxi : MainAPI() {
         return this.replace(regex, "")
     }
 
-    private fun posterHeaders(): Map<String, String> {
+    private fun posterHeaders(url: String): Map<String, String> {
+        val posterBaseUrl = runCatching { getBaseUrl(url) }.getOrDefault(mainUrl)
+        val sameHost = runCatching {
+            URI(posterBaseUrl).host.equals(URI(mainUrl).host, ignoreCase = true)
+        }.getOrDefault(false)
         val userAgent = defaultHeaders["User-Agent"].orEmpty()
         val cookie = cfCookieHeader.orEmpty()
         return buildMap {
-            put("Referer", mainUrl)
+            put("Referer", if (sameHost) mainUrl else "$posterBaseUrl/")
             if (userAgent.isNotBlank()) put("User-Agent", userAgent)
-            if (cookie.isNotBlank()) put("Cookie", cookie)
+            if (sameHost && cookie.isNotBlank()) put("Cookie", cookie)
         }
     }
 
     private fun normalizePosterUrl(url: String): String {
-        return url.replace("&amp;", "&").trim()
+        val fixed = url.replace("&amp;", "&").trim()
+        val wpProxyMatch = Regex("""https?://i\d+\.wp\.com/([^?]+)(?:\?.*)?""", RegexOption.IGNORE_CASE)
+            .find(fixed)
+            ?.groupValues
+            ?.getOrNull(1)
+
+        return wpProxyMatch?.let { "https://${it.trimStart('/')}" } ?: fixed
     }
 
     /** Base URL dari sebuah URL (scheme + host) */
