@@ -1,4 +1,5 @@
 package com.ylnime
+import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.*
 
 class YLNimeExtractor : ExtractorApi() {
@@ -8,9 +9,9 @@ class YLNimeExtractor : ExtractorApi() {
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         val document = app.get(url, referer = referer).document
-        val source = document.select("source").first()
+        val source = document.selectFirst("source")
         val quality = Qualities.Unknown.value
-        val src = source.attr("src") ?: ""
+        val src = source?.attr("src") ?: ""
         return listOf(
             newExtractorLink(this.name, this.name, src, ExtractorLinkType.VIDEO) {
                 this.referer = url
