@@ -32,6 +32,18 @@ import java.util.concurrent.TimeUnit
 class Klikxxi : MainAPI() {
     companion object {
         var context: android.content.Context? = null
+        @Volatile private var cfCookieHeader: String? = null
+
+        // Opening list pages can be slow due to Cloudflare and heavy HTML.
+        const val LIST_TIMEOUT_SECONDS = 240L
+        const val DEFAULT_TIMEOUT_SECONDS = 120L
+
+        private fun updateCfCookieHeader(cookies: Map<String, String>) {
+            if (cookies.isEmpty()) return
+            val filtered = cookies.filterKeys { it == "cf_clearance" || it == "__cf_bm" }
+            if (filtered.isEmpty()) return
+            cfCookieHeader = filtered.entries.joinToString("; ") { (k, v) -> "$k=$v" }
+        }
     }
     override var mainUrl = "https://klikxxi.me"
     override var name = "Klikxxi🎭"
@@ -41,33 +53,45 @@ class Klikxxi : MainAPI() {
     override val supportedTypes =
         setOf(TvType.Movie, TvType.TvSeries, TvType.Anime, TvType.AsianDrama)
 
+    // Use CloudflareKiller here to avoid blocking main-page loads with a WebView flow.
     private val cloudflareInterceptor by lazy { CloudflareKiller() }
     private val defaultHeaders = mapOf(
         "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
         "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36"
     )
 
-    private suspend fun request(url: String, ref: String? = null): NiceResponse {
-        return app.get(
+    private suspend fun request(
+        url: String,
+        ref: String? = null,
+        timeoutSeconds: Long = DEFAULT_TIMEOUT_SECONDS
+    ): NiceResponse {
+        val response = app.get(
             url,
             interceptor = cloudflareInterceptor,
             headers = defaultHeaders,
-            referer = ref
+            referer = ref,
+            timeout = timeoutSeconds
         )
+        updateCfCookieHeader(response.cookies)
+        return response
     }
 
     private suspend fun requestPost(
         url: String,
         data: Map<String, String>,
-        ref: String? = null
+        ref: String? = null,
+        timeoutSeconds: Long = DEFAULT_TIMEOUT_SECONDS
     ): NiceResponse {
-        return app.post(
+        val response = app.post(
             url,
             interceptor = cloudflareInterceptor,
             headers = defaultHeaders,
             referer = ref,
-            data = data
+            data = data,
+            timeout = timeoutSeconds
         )
+        updateCfCookieHeader(response.cookies)
+        return response
     }
     
 
@@ -93,7 +117,7 @@ class Klikxxi : MainAPI() {
     }.replace("//", "/")
      .replace(":/", "://")
 
-    val document = request(url).document
+    val document = request(url, timeoutSeconds = LIST_TIMEOUT_SECONDS).document
 
     val items = document.select(
         "article.has-post-thumbnail, article.item, article.item-infinite, div.latestMovie article, div.latestSeri article"
@@ -145,6 +169,7 @@ class Klikxxi : MainAPI() {
         // Poster – support src, srcset, data-lazy-src, dll + ambil resolusi terbesar
         val posterElement = this.selectFirst("img.wp-post-image, img.attachment-large, img")
         val posterUrl = posterElement?.fixPoster()?.let { fixUrl(it) }
+        val posterHeaders = posterUrl?.let { posterHeaders() }
 
         val quality = this.selectFirst(".gmr-quality-item")?.let { el ->
     // 1. Check if text directly available: <div class="gmr-quality-item">HD</div>
@@ -184,10 +209,12 @@ class Klikxxi : MainAPI() {
         return if (isSeries) {
             newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
                 this.posterUrl = posterUrl
+                this.posterHeaders = posterHeaders
             }
         } else {
             newMovieSearchResponse(title, href, TvType.Movie) {
                 this.posterUrl = posterUrl
+                this.posterHeaders = posterHeaders
                 if (!quality.isNullOrBlank()) addQuality(quality)
                 this.score = Score.from10(ratingText?.toDoubleOrNull())
             }
@@ -195,7 +222,7 @@ class Klikxxi : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = request("$mainUrl/?s=$query").document
+        val document = request("$mainUrl/?s=$query", timeoutSeconds = LIST_TIMEOUT_SECONDS).document
         return document.select("article.item, article.has-post-thumbnail, article.item-infinite")
             .mapNotNull { it.toSearchResult() }
     }
@@ -206,7 +233,11 @@ class Klikxxi : MainAPI() {
         val href = this.selectFirst("a")!!.attr("href")
         val posterElement = this.selectFirst("img.wp-post-image, img.attachment-large, img")
         val posterUrl = posterElement?.fixPoster()?.let { fixUrl(it) }
-        return newMovieSearchResponse(title, href, TvType.Movie) { this.posterUrl = posterUrl }
+        val posterHeaders = posterUrl?.let { posterHeaders() }
+        return newMovieSearchResponse(title, href, TvType.Movie) {
+            this.posterUrl = posterUrl
+            this.posterHeaders = posterHeaders
+        }
     }
 
 
@@ -332,6 +363,7 @@ class Klikxxi : MainAPI() {
         return if (tvType == TvType.TvSeries) {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
+                this.posterHeaders = poster?.let { posterHeaders() }
                 this.plot = description
                 this.tags = tags
                 this.year = year
@@ -342,6 +374,7 @@ class Klikxxi : MainAPI() {
         } else {
             newMovieLoadResponse(title, url, TvType.Movie, url) {
                 this.posterUrl = poster
+                this.posterHeaders = poster?.let { posterHeaders() }
                 this.plot = description
                 this.tags = tags
                 this.year = year
@@ -387,7 +420,8 @@ class Klikxxi : MainAPI() {
             val iframe = response.selectFirst("iframe")?.getIframeAttr() ?: return@forEach
             val link = httpsify(iframe)
 
-            loadExtractor(link, mainUrl, subtitleCallback, callback)
+            // Some hosts require the actual page url as referer, not just the domain.
+            loadExtractor(link, data, subtitleCallback, callback)
         }
 
         return true
@@ -425,7 +459,7 @@ class Klikxxi : MainAPI() {
         }
     )
     if (!bestSrcset.isNullOrBlank()) {
-        return fixUrl(bestSrcset.fixImageQuality())
+        return normalizePosterUrl(fixUrl(bestSrcset.fixImageQuality()))
     }
 
     // Prioritas 2: data-src atau data-lazy
@@ -444,12 +478,12 @@ class Klikxxi : MainAPI() {
             !it.contains("placeholder", true) &&
             !it.endsWith(".svg", true)
     }
-    if (!dataSrc.isNullOrBlank()) return fixUrl(dataSrc.fixImageQuality())
+    if (!dataSrc.isNullOrBlank()) return normalizePosterUrl(fixUrl(dataSrc.fixImageQuality()))
 
     // Prioritas 3: src biasa
     val src = this.attr("src")
     if (!src.isNullOrBlank() && !src.startsWith("data:", true) && !src.endsWith(".svg", true)) {
-        return fixUrl(src.fixImageQuality())
+        return normalizePosterUrl(fixUrl(src.fixImageQuality()))
     }
 
     return null
@@ -466,6 +500,20 @@ class Klikxxi : MainAPI() {
         if (this == null) return ""
         val regex = Regex("-\\d+x\\d+(?=\\.(webp|jpg|jpeg|png))", RegexOption.IGNORE_CASE)
         return this.replace(regex, "")
+    }
+
+    private fun posterHeaders(): Map<String, String> {
+        val userAgent = defaultHeaders["User-Agent"].orEmpty()
+        val cookie = cfCookieHeader.orEmpty()
+        return buildMap {
+            put("Referer", mainUrl)
+            if (userAgent.isNotBlank()) put("User-Agent", userAgent)
+            if (cookie.isNotBlank()) put("Cookie", cookie)
+        }
+    }
+
+    private fun normalizePosterUrl(url: String): String {
+        return url.replace("&amp;", "&").trim()
     }
 
     /** Base URL dari sebuah URL (scheme + host) */
