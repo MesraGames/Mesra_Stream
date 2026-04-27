@@ -6,17 +6,17 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.newSubtitleFile
-import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.utils.M3u8Helper
+import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 import com.lagradost.cloudstream3.utils.getAndUnpack
 import com.lagradost.cloudstream3.utils.newExtractorLink
 
-open class Jeniusplay2 : ExtractorApi() {
-    override val name = "Jeniusplay"
-    override val mainUrl = "https://jeniusplay.com"
+class Jeniusplay : ExtractorApi() {
+    override var name = "Jeniusplay"
+    override var mainUrl = "https://jeniusplay.com"
     override val requiresReferer = true
     private val cloudflareInterceptor by lazy { CloudflareKiller() }
 
@@ -26,76 +26,28 @@ open class Jeniusplay2 : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val normalizedUrl = if (url.startsWith("//")) "https:$url" else url
-        val pageRef = referer?.takeIf { it.isNotBlank() }
-            ?: normalizedUrl.substringBefore("#").takeIf { it.contains("jeniusplay", true) }
-            ?: "$mainUrl/"
-        val document = app.get(
-            normalizedUrl,
-            referer = pageRef,
-            interceptor = cloudflareInterceptor
-        ).document
-        val hash = Regex("""[?&]data=([^&#]+)""").find(normalizedUrl)?.groupValues?.getOrNull(1)
-            ?: normalizedUrl.split("/").lastOrNull()?.substringAfter("data=")
-            ?: return
+        val document = app.get(url, referer = referer, interceptor = cloudflareInterceptor).document
+        val hash = url.split("/").last().substringAfter("data=")
 
-        val response = app.post(
+        val m3uLink = app.post(
             url = "$mainUrl/player/index.php?data=$hash&do=getVideo",
-            data = mapOf("hash" to hash, "r" to pageRef),
-            referer = pageRef,
-            headers = mapOf(
-                "X-Requested-With" to "XMLHttpRequest",
-                "Origin" to mainUrl,
-                "Referer" to pageRef
-            ),
+            data = mapOf("hash" to hash, "r" to "$referer"),
+            referer = referer,
+            headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
             interceptor = cloudflareInterceptor
-        ).parsed<ResponseSource>()
-            ?: app.post(
-                url = "$mainUrl/player/index.php?data=$hash&do=getVideo",
-                data = mapOf("hash" to hash, "r" to pageRef),
-                referer = pageRef,
-                headers = mapOf("X-Requested-With" to "XMLHttpRequest"),
-                interceptor = cloudflareInterceptor
-            ).parsed<ResponseSource>()
-            ?: return
+        ).parsed<ResponseSource>().videoSource.replace(".txt", ".m3u8")
 
-        val streamUrl = (response.securedLink ?: response.videoSource)
-            ?.replace(".txt", ".m3u8")
-            ?.takeIf { it.isNotBlank() }
-            ?: return
-        val streamHeaders = mapOf(
-            "Origin" to mainUrl,
-            "Referer" to "$mainUrl/",
-            "Accept" to "*/*"
-        )
+        generateM3u8(
+            name,
+            m3uLink,
+            mainUrl,
+        ).forEach(callback)
 
-        if (streamUrl.contains(".m3u8", true)) {
-            M3u8Helper.generateM3u8(
-                name,
-                streamUrl,
-                "$mainUrl/",
-                headers = streamHeaders
-            ).forEach(callback)
-        } else {
-            callback.invoke(
-                newExtractorLink(
-                    name = "Jenius AUTO",
-                    source = this.name,
-                    url = streamUrl,
-                    type = ExtractorLinkType.VIDEO
-                ) {
-                    this.referer = pageRef
-                    this.headers = streamHeaders
-                }
-            )
-        }
-
-
-        document.select("script").map { script ->
+        document.select("script").forEach { script ->
             if (script.data().contains("eval(function(p,a,c,k,e,d)")) {
                 val subData =
                     getAndUnpack(script.data()).substringAfter("\"tracks\":[").substringBefore("],")
-                tryParseJson<List<Tracks>>("[$subData]")?.map { subtitle ->
+                AppUtils.tryParseJson<List<Tracks>>("[$subData]")?.map { subtitle ->
                     subtitleCallback.invoke(
                         newSubtitleFile(
                             getLanguage(subtitle.label ?: ""),
@@ -104,14 +56,6 @@ open class Jeniusplay2 : ExtractorApi() {
                     )
                 }
             }
-        }
-    }
-
-    private fun getLanguage(str: String): String {
-        return when {
-            str.contains("indonesia", true) || str
-                .contains("bahasa", true) -> "Indonesian"
-            else -> str
         }
     }
 
@@ -126,13 +70,112 @@ open class Jeniusplay2 : ExtractorApi() {
         @JsonProperty("file") val file: String,
         @JsonProperty("label") val label: String?,
     )
+
+    private fun getLanguage(str: String): String {
+        return when {
+            str.contains("indonesia", true) || str.contains("bahasa", true) -> "Indonesian"
+            else -> str
+        }
+    }
 }
 
-open class Majorplay2 : ExtractorApi() {
-    override val name = "Majorplay"
-    override val mainUrl = "https://majorplay.net"
+class Majorplay : ExtractorApi() {
+    override var name = "Majorplay"
+    override var mainUrl = "https://majorplay.net"
     override val requiresReferer = true
     private val cloudflareInterceptor by lazy { CloudflareKiller() }
+
+    data class MajorplaySubtitle(
+        @JsonProperty("lang") val lang: String = "",
+        @JsonProperty("path") val path: String = "",
+        @JsonProperty("label") val label: String = ""
+    )
+
+    private suspend fun extractSubtitlesFromHtml(
+        html: String,
+        baseUrl: String,
+        subtitleCallback: (SubtitleFile) -> Unit
+    ) {
+        // Extract subtitles from JSON in script tags (Majorplay Next.js format)
+        val subtitleRegex = Regex(""""subtitles"\s*:\s*(\[.*?\])""", RegexOption.DOT_MATCHES_ALL)
+        subtitleRegex.findAll(html).forEach { match ->
+            val jsonArray = match.groupValues.getOrNull(1) ?: return@forEach
+            try {
+                val subtitles = AppUtils.tryParseJson<List<MajorplaySubtitle>>(jsonArray)
+                subtitles?.forEach { sub ->
+                    val subUrl = when {
+                        sub.path.startsWith("http", ignoreCase = true) -> sub.path
+                        sub.path.startsWith("/") -> baseUrl.substringBefore("/embed") + sub.path
+                        else -> "$baseUrl/${sub.path}"
+                    }
+                    val lang = when {
+                        sub.label.contains("indonesia", true) || sub.lang.contains("id", true) -> "Indonesian"
+                        sub.label.contains("english", true) || sub.lang.contains("en", true) -> "English"
+                        else -> sub.label.ifBlank { sub.lang.ifBlank { "Unknown" } }
+                    }
+                    subtitleCallback.invoke(
+                        newSubtitleFile(lang, subUrl)
+                    )
+                }
+            } catch (_: Exception) { }
+        }
+
+        // Extract from initialToken JSON format
+        val initialTokenRegex = Regex(""""initialToken"\s*:\s*\{.*?"subtitles"\s*:\s*(\[.*?\]).*?\}""", RegexOption.DOT_MATCHES_ALL)
+        initialTokenRegex.findAll(html).forEach { match ->
+            val jsonArray = match.groupValues.getOrNull(1) ?: return@forEach
+            try {
+                val subtitles = AppUtils.tryParseJson<List<MajorplaySubtitle>>(jsonArray)
+                subtitles?.forEach { sub ->
+                    val subUrl = when {
+                        sub.path.startsWith("http", ignoreCase = true) -> sub.path
+                        sub.path.startsWith("/") -> baseUrl.substringBefore("/embed") + sub.path
+                        else -> "$baseUrl/${sub.path}"
+                    }
+                    val lang = when {
+                        sub.label.contains("indonesia", true) || sub.lang.contains("id", true) -> "Indonesian"
+                        sub.label.contains("english", true) || sub.lang.contains("en", true) -> "English"
+                        else -> sub.label.ifBlank { sub.lang.ifBlank { "Unknown" } }
+                    }
+                    subtitleCallback.invoke(
+                        newSubtitleFile(lang, subUrl)
+                    )
+                }
+            } catch (_: Exception) { }
+        }
+
+        // Extract from HTML track elements
+        val trackRegex = Regex("""<track[^>]*kind=["']?(?:captions|subtitles)["']?[^>]*>""", RegexOption.IGNORE_CASE)
+        trackRegex.findAll(html).forEach { match ->
+            val trackTag = match.value
+            val srcMatch = Regex("""src=["']([^"']+)["']""").find(trackTag)
+            val labelMatch = Regex("""label=["']([^"']+)["']""").find(trackTag)
+            val srclangMatch = Regex("""srclang=["']([^"']+)["']""").find(trackTag)
+
+            val subUrl = srcMatch?.groupValues?.getOrNull(1) ?: return@forEach
+            val label = labelMatch?.groupValues?.getOrNull(1) ?: srclangMatch?.groupValues?.getOrNull(1) ?: ""
+            val lang = when {
+                label.contains("indonesia", true) -> "Indonesian"
+                label.contains("english", true) -> "English"
+                else -> label.ifBlank { "Unknown" }
+            }
+            val fullUrl = when {
+                subUrl.startsWith("http", ignoreCase = true) -> subUrl
+                subUrl.startsWith("/") -> baseUrl.substringBefore("/embed") + subUrl
+                else -> "$baseUrl/$subUrl"
+            }
+            subtitleCallback.invoke(newSubtitleFile(lang, fullUrl))
+        }
+
+        // Extract direct subtitle URLs (.vtt, .srt, .ass)
+        Regex("""https?://[^"'\s]+\.(?:vtt|srt|ass)(?:\?[^"'\s]*)?""", RegexOption.IGNORE_CASE)
+            .findAll(html)
+            .map { it.value }
+            .distinct()
+            .forEach { subUrl ->
+                subtitleCallback.invoke(newSubtitleFile("Unknown", subUrl))
+            }
+    }
 
     override suspend fun getUrl(
         url: String,
@@ -152,6 +195,7 @@ open class Majorplay2 : ExtractorApi() {
                 interceptor = WebViewResolver(
                     interceptUrl = mediaRegex,
                     additionalUrls = listOf(
+                        Regex("""https?://[^"'\s]+mime=video(?:%2F|/)mp4[^"'\s]*""", RegexOption.IGNORE_CASE),
                         Regex("""https?://[^"'\s]+\.m3u8[^"'\s]*""", RegexOption.IGNORE_CASE),
                         Regex("""https?://[^"'\s]+\.mp4[^"'\s]*""", RegexOption.IGNORE_CASE),
                         Regex("""https?://[^"'\s]+\.txt[^"'\s]*""", RegexOption.IGNORE_CASE),
@@ -162,6 +206,11 @@ open class Majorplay2 : ExtractorApi() {
             ).url.substringBefore('#')
         }.getOrNull() ?: run {
             val doc = runCatching { app.get(url, referer = referer, interceptor = cloudflareInterceptor).document }.getOrNull()
+            val html = doc?.html().orEmpty()
+            
+            // Extract subtitles from HTML embed page (Majorplay Next.js format)
+            extractSubtitlesFromHtml(html, url, subtitleCallback)
+            
             val src = doc?.selectFirst("video source[src], source[src]")?.attr("abs:src")?.trim().orEmpty()
             val videoSrc = doc?.selectFirst("video[src]")?.attr("abs:src")?.trim().orEmpty()
             val scriptData = doc?.select("script")?.joinToString("\n") { it.data() }.orEmpty()
@@ -174,6 +223,7 @@ open class Majorplay2 : ExtractorApi() {
                 Regex("""sources\s*:\s*\[\s*\{[^}]*["']file["']\s*:\s*["'](https?://[^"']+\.(?:m3u8|mp4)[^"']*)["']""", RegexOption.IGNORE_CASE),
                 Regex("""https?://[^"'\s]+\.m3u8[^"'\s]*""", RegexOption.IGNORE_CASE),
                 Regex("""https?://[^"'\s]+\.mp4[^"'\s]*""", RegexOption.IGNORE_CASE),
+                Regex("""https?://[^"'\s]+\.txt[^"'\s]*""", RegexOption.IGNORE_CASE),
             )
 
             val scriptUrl = patterns.firstNotNullOfOrNull { regex ->
@@ -186,7 +236,7 @@ open class Majorplay2 : ExtractorApi() {
                     val unpacked = getAndUnpack(script.data())
                     val subData = unpacked.substringAfter("\"tracks\":[", "").substringBefore("],", "")
                     if (subData.isNotBlank()) {
-                        tryParseJson<List<Tracks>>("[$subData]")?.map { subtitle ->
+                        AppUtils.tryParseJson<List<Tracks>>("[$subData]")?.map { subtitle ->
                             subtitleCallback.invoke(
                                 newSubtitleFile(
                                     getLanguage(subtitle.label ?: ""),
@@ -228,12 +278,21 @@ open class Majorplay2 : ExtractorApi() {
         } ?: return
 
         if (resolvedUrl.contains(".m3u8", ignoreCase = true)) {
-            M3u8Helper.generateM3u8(name, resolvedUrl, referer ?: url).forEach(callback)
+            generateM3u8(name, resolvedUrl, referer ?: url).forEach(callback)
+            return
+        }
+
+        if (resolvedUrl.contains(".mp4", ignoreCase = true) || resolvedUrl.contains(".txt", ignoreCase = true)) {
+            callback.invoke(
+                newExtractorLink(name, name, resolvedUrl, INFER_TYPE) {
+                    this.referer = referer ?: url
+                }
+            )
             return
         }
 
         callback.invoke(
-            newExtractorLink(name, name, resolvedUrl, ExtractorLinkType.VIDEO) {
+            newExtractorLink(name, name, resolvedUrl, INFER_TYPE) {
                 this.referer = referer ?: url
             }
         )

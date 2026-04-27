@@ -1,11 +1,12 @@
-package com.idlix
+package com.hexated
 
-import com.lagradost.cloudstream3.plugins.BasePlugin
+import android.content.Context
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
+import com.lagradost.cloudstream3.plugins.Plugin
 
 @CloudstreamPlugin
-class IdlixProviderPlugin: BasePlugin() {
-    override fun load() {
+class IdlixProviderPlugin : Plugin() {
+    override fun load(context: Context) {
         registerMainAPI(IdlixProvider())
         registerExtractorAPI(Jeniusplay())
         registerExtractorAPI(Majorplay())
