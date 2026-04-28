@@ -17,9 +17,6 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
-// GANTI IMPORT DI SINI MENJADI YFLIX:
-import com.yflix.BuildConfig
-
 class BottomFragment(private val plugin: YflixPlugin) : BottomSheetDialogFragment() {
 
     @SuppressLint("UseCompatLoadingForDrawables", "SetTextI18n", "DiscouragedApi")
@@ -31,7 +28,7 @@ class BottomFragment(private val plugin: YflixPlugin) : BottomSheetDialogFragmen
         val id = plugin.resources!!.getIdentifier(
             "bottom_sheet_layout",
             "layout",
-            BuildConfig.LIBRARY_PACKAGE_NAME
+            "com.yflix" // Diubah dari BuildConfig
         )
         val layout = plugin.resources!!.getLayout(id)
         val view = inflater.inflate(layout, container, false)
@@ -39,14 +36,14 @@ class BottomFragment(private val plugin: YflixPlugin) : BottomSheetDialogFragmen
         val outlineId = plugin.resources!!.getIdentifier(
             "outline",
             "drawable",
-            BuildConfig.LIBRARY_PACKAGE_NAME
+            "com.yflix" // Diubah dari BuildConfig
         )
 
         // Save button
         val saveIconId = plugin.resources!!.getIdentifier(
             "save_icon",
             "drawable",
-            BuildConfig.LIBRARY_PACKAGE_NAME
+            "com.yflix" // Diubah dari BuildConfig
         )
         val saveBtn = view.findView<ImageView>("save")
         saveBtn.setImageDrawable(plugin.resources!!.getDrawable(saveIconId, null))
@@ -73,7 +70,7 @@ class BottomFragment(private val plugin: YflixPlugin) : BottomSheetDialogFragmen
         val radioBtnId = plugin.resources!!.getIdentifier(
             "radio_button",
             "layout",
-            BuildConfig.LIBRARY_PACKAGE_NAME
+            "com.yflix" // Diubah dari BuildConfig
         )
 
         ServerList.entries.forEach { server ->
@@ -108,7 +105,7 @@ class BottomFragment(private val plugin: YflixPlugin) : BottomSheetDialogFragmen
     }
 
     private fun <T : View> View.findView(name: String): T {
-        val id = plugin.resources!!.getIdentifier(name, "id", BuildConfig.LIBRARY_PACKAGE_NAME)
+        val id = plugin.resources!!.getIdentifier(name, "id", "com.yflix") // Diubah dari BuildConfig
         return findViewById(id)
     }
 

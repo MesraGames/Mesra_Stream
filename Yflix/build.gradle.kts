@@ -4,6 +4,9 @@ import java.util.Properties
 version = 13
 
 android {
+    // INI BARIS YANG DITAMBAHKAN AGAR BUILDCONFIG BERHASIL DI-GENERATE
+    namespace = "com.yflix"
+
     buildFeatures {
         buildConfig = true
         viewBinding = true
@@ -39,7 +42,7 @@ cloudstream {
     description = "Movies & TV Series Etc\nSettings allow selecting domains such as 1Movies, SolarMovie and Sflix"
     
     // Opsional: Karena Anda ingin mandiri dari phisher98, Anda bisa mengganti nama author dengan nama Anda sendiri
-    authors = listOf("NamaAndaDisini") 
+    authors = listOf("Mesra Stream") 
     
     /**
      * Status int as the following:
