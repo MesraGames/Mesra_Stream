@@ -1023,6 +1023,31 @@
         "name": "Winbu"
     },
     {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=yflix.to/&sz=%size%",
+        "fileHash": "sha256-13ddf39cbbbdfb1d8497ccc772d83003f3dcd5d3fdc739ad8776ac2c39a16330",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 58992,
+        "status": 1,
+        "language": "en",
+        "authors": [
+            "Mesra Stream"
+        ],
+        "tvTypes": [
+            "AsianDrama",
+            "TvSeries",
+            "Anime",
+            "Movie",
+            "Cartoon",
+            "AnimeMovie"
+        ],
+        "version": 13,
+        "internalName": "Yflix",
+        "description": "Movies & TV Series Etc\nSettings allow selecting domains such as 1Movies, SolarMovie and Sflix",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Yflix.cs3",
+        "name": "Yflix"
+    },
+    {
         "iconUrl": "https://www.google.com/s2/favicons?domain=ylnime.com&sz=%size%",
         "fileHash": "sha256-bd05f68e62cb8b76d26edb9e2b67bff8ebced9288e4d3d223e43f9580541243b",
         "apiVersion": 1,
