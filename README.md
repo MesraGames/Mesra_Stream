@@ -56,7 +56,6 @@ Dedikasi, kerja keras, dan konsistensi kalian dalam menjaga serta mengembangkan 
 | Winbu.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | ZoronimeProvider.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | Nimegami.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| yflix.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 
 ---
 
