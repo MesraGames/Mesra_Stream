@@ -390,10 +390,10 @@
     },
     {
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/idlix.png",
-        "fileHash": "sha256-e69ad8fdc5b10c12eb556ecb4d40d93e9ff7bfd0ba9a1d915255b02106b5e6d6",
+        "fileHash": "sha256-cdb5b08483d8440368b19057d820ddd482aea8247cfbbab8868511537fc3591f",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 52867,
+        "fileSize": 52856,
         "status": 1,
         "language": "id",
         "authors": [
