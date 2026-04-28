@@ -389,15 +389,15 @@
         "name": "Hidoristream"
     },
     {
-        "iconUrl": "https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://idlixian.com&size=16",
-        "fileHash": "sha256-320327acae1e8e7344906cda08185d4c7e86c0a077fe18d9c4c031b473d6646a",
+        "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/idlix.png",
+        "fileHash": "sha256-e69ad8fdc5b10c12eb556ecb4d40d93e9ff7bfd0ba9a1d915255b02106b5e6d6",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 89090,
+        "fileSize": 52867,
         "status": 1,
         "language": "id",
         "authors": [
-            "Hexated,Phisher98"
+            "Phisher98"
         ],
         "tvTypes": [
             "TvSeries",
@@ -405,7 +405,7 @@
             "Anime",
             "AsianDrama"
         ],
-        "version": 7,
+        "version": 10,
         "internalName": "IdlixProvider",
         "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/IdlixProvider.cs3",
         "name": "IdlixProvider"
