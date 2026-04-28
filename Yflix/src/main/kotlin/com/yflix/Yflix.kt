@@ -20,7 +20,6 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.getQualityFromString
 import com.lagradost.cloudstream3.mainPageOf
-import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newMovieLoadResponse
@@ -29,7 +28,7 @@ import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
-import com.phisher98.BuildConfig
+// IMPORT PHISHER98 DIHAPUS DARI SINI
 import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -39,7 +38,6 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.net.URLEncoder
 import kotlin.random.Random
-
 
 class Yflix : MainAPI() {
     override var mainUrl = YflixPlugin.currentYflixServer
@@ -69,14 +67,17 @@ class Yflix : MainAPI() {
         }
     }
 
-
     companion object {
         private const val TMDB_API_KEY = "1865f43a0549ca50d341dd9ab8b29f49"
+        
+        // Catatan: Ini adalah proxy worker TMDB. Karena ini hanya URL API, tidak akan menyebabkan error compile.
         const val TMDBAPI = "https://orange-voice-abcf.phisher16.workers.dev"
 
         const val TMDBIMAGEBASEURL = "https://image.tmdb.org/t/p/original"
+        
         suspend fun decode(text: String?): String {
             return try {
+                // Sekarang ini akan otomatis menggunakan BuildConfig milik Yflix sendiri
                 val res = app.get("${BuildConfig.YFXENC}?text=$text").text
                 JSONObject(res).getString("result")
             } catch (_: Exception) {
@@ -90,6 +91,7 @@ class Yflix : MainAPI() {
             val jsonBody = """{"text":"$text"}""".toRequestBody(JSON)
 
             return try {
+                // Sekarang ini akan otomatis menggunakan BuildConfig milik Yflix sendiri
                 val res = app.post(
                     BuildConfig.YFXDEC,
                     requestBody = jsonBody
@@ -99,9 +101,7 @@ class Yflix : MainAPI() {
                 ""
             }
         }
-
     }
-
 
     override val mainPage =
         mainPageOf(
@@ -120,7 +120,6 @@ class Yflix : MainAPI() {
             .toNewSearchResponseList()
     }
 
-
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         delay(Random.nextLong(1000, 2000))
 
@@ -138,7 +137,6 @@ class Yflix : MainAPI() {
         val items = res.select("div.item").map { it.toSearchResult() }
         return newHomePageResponse(request.name, items)
     }
-
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
@@ -171,8 +169,8 @@ class Yflix : MainAPI() {
 
             val imdbIdFromMovie = tmdbMovieId?.let { id ->
                 runCatching {
-                    val url = "$TMDBAPI/movie/$id/external_ids?api_key=$TMDB_API_KEY"
-                    val jsonText = app.get(url).text
+                    val tmdbUrl = "$TMDBAPI/movie/$id/external_ids?api_key=$TMDB_API_KEY"
+                    val jsonText = app.get(tmdbUrl).text
                     JSONObject(jsonText).optString("imdb_id").takeIf { it.isNotBlank() }
                 }.getOrNull()
             }
@@ -198,8 +196,6 @@ class Yflix : MainAPI() {
                 bestBackdrop?.let { "https://image.tmdb.org/t/p/original$it" }
             }.getOrNull()
 
-
-
             val movieCastList = parseCredits(movieCreditsJsonText)
 
             return newMovieLoadResponse(title, url, TvType.Movie, movieId) {
@@ -221,8 +217,8 @@ class Yflix : MainAPI() {
         val tmdbShowId = runCatching { fetchtmdb(title,false) }.getOrNull()
         val imdbIdFromShow = tmdbShowId?.let { id ->
             runCatching {
-                val url = "$TMDBAPI/tv/$id/external_ids?api_key=$TMDB_API_KEY"
-                val jsonText = app.get(url).text
+                val tmdbUrl = "$TMDBAPI/tv/$id/external_ids?api_key=$TMDB_API_KEY"
+                val jsonText = app.get(tmdbUrl).text
                 JSONObject(jsonText).optString("imdb_id").takeIf { it.isNotBlank() }
             }.getOrNull()
         }
@@ -231,7 +227,6 @@ class Yflix : MainAPI() {
             "https://live.metahub.space/logo/medium/$it/img"
         }
 
-        // fetch show credits once (used for actors)
         val showCreditsJsonText = tmdbShowId?.let { id ->
             runCatching {
                 app.get("$TMDBAPI/tv/$id/credits?api_key=$TMDB_API_KEY&language=en-US").text
@@ -309,7 +304,6 @@ class Yflix : MainAPI() {
         }
     }
 
-
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -361,7 +355,6 @@ class Yflix : MainAPI() {
                         return@forEach
                     }
 
-
                     val iframeUrl = try {
                         extractVideoUrlFromJson(decodedIframePayload)
                     } catch (e: Exception) {
@@ -390,7 +383,6 @@ class Yflix : MainAPI() {
             return false
         }
     }
-
 
     data class Response(
         @get:JsonProperty("result") val result: String
@@ -432,7 +424,6 @@ class Yflix : MainAPI() {
         return null
     }
 
-
     fun parseCredits(jsonText: String?): List<ActorData> {
         if (jsonText.isNullOrBlank()) return emptyList()
         val list = ArrayList<ActorData>()
@@ -448,7 +439,4 @@ class Yflix : MainAPI() {
         }
         return list
     }
-
-
 }
-

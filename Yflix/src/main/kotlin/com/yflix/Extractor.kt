@@ -9,7 +9,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
-import com.phisher98.BuildConfig
+// IMPORT PHISHER98 DIHAPUS DARI SINI
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
@@ -17,7 +17,6 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
-
 
 class Fourspromax : MegaUp() {
     override var mainUrl = "https://4spromax.site"
@@ -28,7 +27,6 @@ class Rapidairmax : MegaUp() {
     override var mainUrl = "https://rapidairmax.site"
     override val requiresReferer = true
 }
-
 
 class rapidshare : MegaUp() {
     override var mainUrl = "https://rapidshare.cc"
@@ -42,17 +40,17 @@ open class MegaUp : ExtractorApi() {
 
     companion object {
         private val HEADERS = mapOf(
-                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0",
-                "Accept" to "text/html, *//*; q=0.01",
-                "Accept-Language" to "en-US,en;q=0.5",
-                "Sec-GPC" to "1",
-                "Sec-Fetch-Dest" to "empty",
-                "Sec-Fetch-Mode" to "cors",
-                "Sec-Fetch-Site" to "same-origin",
-                "Priority" to "u=0",
-                "Pragma" to "no-cache",
-                "Cache-Control" to "no-cache",
-                "referer" to "https://yflix.to/",
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0",
+            "Accept" to "text/html, */*; q=0.01",
+            "Accept-Language" to "en-US,en;q=0.5",
+            "Sec-GPC" to "1",
+            "Sec-Fetch-Dest" to "empty",
+            "Sec-Fetch-Mode" to "cors",
+            "Sec-Fetch-Site" to "same-origin",
+            "Priority" to "u=0",
+            "Pragma" to "no-cache",
+            "Cache-Control" to "no-cache",
+            "referer" to "https://yflix.to/",
         )
     }
 
@@ -62,13 +60,12 @@ open class MegaUp : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-
         val mediaUrl = url.replace("/e/", "/media/").replace("/e2/", "/media/")
         val displayName = referer ?: this.name
 
         val encodedResult = app.get(mediaUrl, headers = HEADERS)
-        .parsedSafe<YflixResponse>()
-        ?.result
+            .parsedSafe<YflixResponse>()
+            ?.result
 
         if (encodedResult == null) return
 
@@ -80,9 +77,12 @@ open class MegaUp : ExtractorApi() {
         """.trimIndent()
             .trim()
             .toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
-        val m3u8Data=app.post(BuildConfig.KAIMEG, requestBody = body).text
+            
+        // Menggunakan BuildConfig lokal dari Yflix
+        val m3u8Data = app.post(BuildConfig.KAIMEG, requestBody = body).text
+        
         if (m3u8Data.isBlank()) {
-            Log.d("Phisher", "Encoded result is null or empty")
+            Log.d("YflixExtractor", "Encoded result is null or empty")
             return
         }
 
@@ -114,7 +114,8 @@ open class MegaUp : ExtractorApi() {
             }
 
             val tracks = result.optJSONArray("tracks") ?: JSONArray()
-            Log.d("Phisher",tracks.toString())
+            Log.d("YflixExtractor", tracks.toString())
+            
             for (i in 0 until tracks.length()) {
                 val trackObj = tracks.optJSONObject(i) ?: continue
                 val label = trackObj.optString("label").trim().takeIf { it.isNotEmpty() }
@@ -152,11 +153,10 @@ open class MegaUp : ExtractorApi() {
         } catch (_: JSONException) {
             Log.e("Error", "Failed to parse M3U8 JSON")
         }
-      }
+    }
 
     data class YflixResponse(
         @JsonProperty("status") val status: Int,
         @JsonProperty("result") val result: String
     )
-
 }

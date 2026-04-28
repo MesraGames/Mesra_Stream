@@ -16,7 +16,9 @@ import android.widget.Toast
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.phisher98.BuildConfig
+
+// GANTI IMPORT DI SINI MENJADI YFLIX:
+import com.yflix.BuildConfig
 
 class BottomFragment(private val plugin: YflixPlugin) : BottomSheetDialogFragment() {
 
@@ -101,7 +103,6 @@ class BottomFragment(private val plugin: YflixPlugin) : BottomSheetDialogFragmen
                 serverGroup.check(newId)
             }
         }
-
 
         return view
     }

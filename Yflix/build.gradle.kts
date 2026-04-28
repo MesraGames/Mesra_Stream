@@ -1,33 +1,46 @@
-import org.jetbrains.kotlin.konan.properties.Properties
+import java.util.Properties
 
 // use an integer for version numbers
 version = 13
-
 
 android {
     buildFeatures {
         buildConfig = true
         viewBinding = true
     }
+    
     defaultConfig {
+        // 1. Membaca properti dengan aman (Safe Read)
         val properties = Properties()
-        properties.load(project.rootProject.file("local.properties").inputStream())
-        android.buildFeatures.buildConfig=true
-        buildConfigField("String", "YFXENC", "\"${properties.getProperty("YFXENC")}\"")
-        buildConfigField("String", "YFXDEC", "\"${properties.getProperty("YFXDEC")}\"")
-        buildConfigField("String", "KAIMEG", "\"${properties.getProperty("KAIMEG")}\"")
+        val localPropertiesFile = project.rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            properties.load(localPropertiesFile.inputStream())
+        }
+
+        // 2. Mengambil nilai dari local.properties, atau fallback ke Environment Variables GitHub, atau string kosong jika tidak ada
+        val yfxEnc = properties.getProperty("YFXENC") ?: System.getenv("YFXENC") ?: ""
+        val yfxDec = properties.getProperty("YFXDEC") ?: System.getenv("YFXDEC") ?: ""
+        val kaimeg = properties.getProperty("KAIMEG") ?: System.getenv("KAIMEG") ?: ""
+
+        // 3. Memasukkan nilai tersebut ke dalam BuildConfig
+        buildConfigField("String", "YFXENC", "\"$yfxEnc\"")
+        buildConfigField("String", "YFXDEC", "\"$yfxDec\"")
+        buildConfigField("String", "KAIMEG", "\"$kaimeg\"")
     }
 }
+
 dependencies {
     implementation("com.google.android.material:material:1.13.0")
 }
 
-
 cloudstream {
     language = "en"
     // All of these properties are optional, you can safely remove them
-    description = "Movies & TV Series Etc\nSettings allow selecting domains such as 1Movies,SolarMovie and Sflix"
-    authors = listOf("Phisher98")
+    description = "Movies & TV Series Etc\nSettings allow selecting domains such as 1Movies, SolarMovie and Sflix"
+    
+    // Opsional: Karena Anda ingin mandiri dari phisher98, Anda bisa mengganti nama author dengan nama Anda sendiri
+    authors = listOf("NamaAndaDisini") 
+    
     /**
      * Status int as the following:
      * 0: Down
