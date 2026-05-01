@@ -65,6 +65,28 @@
         "name": "AnimeSailProvider"
     },
     {
+        "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://animexin.dev&size=%size%",
+        "fileHash": "sha256-93b47ed3c98a9caf125a6b290915a3e2579dcd6f1a450bfea86ab67d87f74576",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 27585,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "Duro92"
+        ],
+        "tvTypes": [
+            "Anime",
+            "AnimeMovie",
+            "OVA"
+        ],
+        "version": 1,
+        "internalName": "AnimexinProvider",
+        "description": "AnimeXin",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/AnimexinProvider.cs3",
+        "name": "AnimexinProvider"
+    },
+    {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://anoboy.be&size=%size%",
         "fileHash": "sha256-53cac281b5bb6d5fd50d8a466eb45107efe9199a1a884a3a1af0f11d198c3eef",
         "apiVersion": 1,
@@ -170,6 +192,27 @@
         "name": "BstationProvider"
     },
     {
+        "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/Cinemacity.png",
+        "fileHash": "sha256-af441ccedd694c644279e3aa786406f451b387588f2a4fc50ec6c56bda62cbc7",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 51432,
+        "status": 1,
+        "language": "en",
+        "authors": [
+            "Phisher98"
+        ],
+        "tvTypes": [
+            "Movie",
+            "TvSeries"
+        ],
+        "version": 6,
+        "internalName": "CinemacityProvider",
+        "description": "Watch Movies & TvSeries (Multi-Lang/Audio)",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/CinemacityProvider.cs3",
+        "name": "CinemacityProvider"
+    },
+    {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://donghub.vip&size=%size%",
         "fileHash": "sha256-101455e5ff9f27b77928538e11f74f96eab1edab621d603c6ec8fa9b0e85b617",
         "apiVersion": 1,
@@ -215,15 +258,15 @@
         "name": "DrakoridProvider"
     },
     {
-        "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://db.hafizhibnusyam.my.id&size=%size%",
-        "fileHash": "sha256-e584d3fcee1836355041685f8bfea48af28df105a8c0ffc20ba15d41de968b13",
+        "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://drama.sansekai.my.id&size=%size%",
+        "fileHash": "sha256-41e725482248b5af241d6f13b677ec2573bae139906e7b3763e1829d916ade8f",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 29727,
+        "fileSize": 39916,
         "status": 1,
         "language": "id",
         "authors": [
-            "Duro92"
+            "duro92"
         ],
         "tvTypes": [
             "TvSeries",
@@ -231,7 +274,7 @@
         ],
         "version": 1,
         "internalName": "Dramabox",
-        "description": "DramaBox API",
+        "description": "DramaBox provider via Sansekai API",
         "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Dramabox.cs3",
         "name": "Dramabox"
     },
@@ -1046,6 +1089,27 @@
         "description": "Movies & TV Series Etc\nSettings allow selecting domains such as 1Movies, SolarMovie and Sflix",
         "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Yflix.cs3",
         "name": "Yflix"
+    },
+    {
+        "iconUrl": "https://yflix.to/favicon.ico",
+        "fileHash": "sha256-9c058090a9f0f3e668129277b4d9b875d20a4aa2670995f3156222bb3be77135",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 45918,
+        "status": 1,
+        "language": "en",
+        "authors": [
+            "Duro92"
+        ],
+        "tvTypes": [
+            "Movie",
+            "TvSeries"
+        ],
+        "version": 1,
+        "internalName": "YflixProvider",
+        "description": "Yflix TMDB-backed movie and TV catalog provider",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/YflixProvider.cs3",
+        "name": "YflixProvider"
     },
     {
         "iconUrl": "https://www.google.com/s2/favicons?domain=ylnime.com&sz=%size%",
