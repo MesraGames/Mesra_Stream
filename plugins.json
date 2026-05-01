@@ -1086,10 +1086,10 @@
     },
     {
         "iconUrl": "https://yflix.to/favicon.ico",
-        "fileHash": "sha256-6bdb79f291893159e11b3d3759a71e0114e83ef807e20aae43b9dbcf3e00be21",
+        "fileHash": "sha256-ce43c97d177436d83b516b556e4b274c1e2032f253babaf31dabded9b0316146",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 36693,
+        "fileSize": 49410,
         "status": 1,
         "language": "en",
         "authors": [
