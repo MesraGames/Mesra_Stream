@@ -1,22 +1,16 @@
 version = 1
 
 cloudstream {
-    description = "DramaBox API"
+    description = "DramaBox provider via Sansekai API"
     language = "id"
-    authors = listOf("Duro92")
+    authors = listOf("duro92")
 
-    /**
-     * Status int as the following:
-     * 0: Down
-     * 1: Ok
-     * 2: Slow
-     * 3: Beta only
-     * */
     status = 1
     tvTypes = listOf(
         "TvSeries",
         "AsianDrama",
     )
-    isCrossPlatform = false
-    iconUrl = "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://db.hafizhibnusyam.my.id&size=%size%"
+
+    iconUrl =
+        "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://drama.sansekai.my.id&size=%size%"
 }
