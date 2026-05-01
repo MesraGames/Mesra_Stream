@@ -213,6 +213,28 @@
         "name": "CinemacityProvider"
     },
     {
+        "iconUrl": "https://klikxxi.me/wp-content/uploads/2024/02/cropped-site-icon.png",
+        "fileHash": "sha256-9b32ba5824195ded8af34c410bc4453bb38c9150170b287265dae2268828e567",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 236504,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "Miku"
+        ],
+        "tvTypes": [
+            "AsianDrama",
+            "TvSeries",
+            "Movie"
+        ],
+        "version": 1,
+        "internalName": "Cinemax21Provider",
+        "description": "CineMax21 \u2014 Streaming Movie and TV Series",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Cinemax21Provider.cs3",
+        "name": "Cinemax21Provider"
+    },
+    {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://donghub.vip&size=%size%",
         "fileHash": "sha256-101455e5ff9f27b77928538e11f74f96eab1edab621d603c6ec8fa9b0e85b617",
         "apiVersion": 1,
@@ -277,6 +299,29 @@
         "description": "DramaBox provider via Sansekai API",
         "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Dramabox.cs3",
         "name": "Dramabox"
+    },
+    {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=www.dubbindo.site&sz=%size%",
+        "fileHash": "sha256-0092fbc9ec3c756777c1b48341074bfdd0b700050fbe955327a6f433592e65ec",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 26226,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "Miku"
+        ],
+        "tvTypes": [
+            "TvSeries",
+            "Movie",
+            "Cartoon",
+            "Anime"
+        ],
+        "version": 1,
+        "internalName": "DubbindoProvider",
+        "description": "Dubbindo \u2014 Streaming Anime, Movie and TV Series",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/DubbindoProvider.cs3",
+        "name": "DubbindoProvider"
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://justilien.com&size=%size%",
@@ -452,6 +497,26 @@
         "internalName": "IdlixProvider",
         "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/IdlixProvider.cs3",
         "name": "IdlixProvider"
+    },
+    {
+        "iconUrl": "https://homecookingrocks.com/wp-content/uploads/2024/10/cropped-indomax21-favicon-color-1.png",
+        "fileHash": "sha256-c6bf0c183001b1a3835aa86a9b9594509986956146ed4124f8ad8f34667c5802",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 26044,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "Miku"
+        ],
+        "tvTypes": [
+            "NSFW"
+        ],
+        "version": 3,
+        "internalName": "IndoMax21Provider",
+        "description": "IndoMax21 \u2014 Streaming Anime, Donghua, Hentai, Porn, Movie and TV Series",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/IndoMax21Provider.cs3",
+        "name": "IndoMax21Provider"
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://tv2.kawanfilm21.co&size=%size%",
@@ -950,29 +1015,6 @@
         "description": "PMSM (Pencuri Movie Sub Malay)",
         "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Pmsm.cs3",
         "name": "Pmsm"
-    },
-    {
-        "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://rebahinn.net&size=%size%",
-        "fileHash": "sha256-6f2318ba51520e110e0cf3e62ff912badc43deda65c35827a01228204e52d57c",
-        "apiVersion": 1,
-        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 16853,
-        "status": 1,
-        "language": "id",
-        "authors": [
-            "Cloudstream AI"
-        ],
-        "tvTypes": [
-            "TvSeries",
-            "Movie",
-            "Anime",
-            "AsianDrama"
-        ],
-        "version": 1,
-        "internalName": "rebahinn",
-        "description": "Rebahinn Provider",
-        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/rebahinn.cs3",
-        "name": "rebahinn"
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://v1.samehadaku.how&size=%size%",
