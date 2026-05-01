@@ -193,10 +193,10 @@
     },
     {
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/Cinemacity.png",
-        "fileHash": "sha256-af441ccedd694c644279e3aa786406f451b387588f2a4fc50ec6c56bda62cbc7",
+        "fileHash": "sha256-364e157f8a89585127a1c927b9ae25fe310c6ecb9fccae12a41532591ae71acb",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 51432,
+        "fileSize": 60735,
         "status": 1,
         "language": "en",
         "authors": [
@@ -1086,10 +1086,10 @@
     },
     {
         "iconUrl": "https://yflix.to/favicon.ico",
-        "fileHash": "sha256-9c058090a9f0f3e668129277b4d9b875d20a4aa2670995f3156222bb3be77135",
+        "fileHash": "sha256-6bdb79f291893159e11b3d3759a71e0114e83ef807e20aae43b9dbcf3e00be21",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 45918,
+        "fileSize": 36693,
         "status": 1,
         "language": "en",
         "authors": [
