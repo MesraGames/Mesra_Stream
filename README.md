@@ -61,13 +61,6 @@ Dedikasi, kerja keras, dan konsistensi kalian dalam menjaga serta mengembangkan 
 
 ---
 
-### 🔴 Belum Fix
-| Provider | Status |
-|----------|--------|
-| nontonanimeindo.cs3 | ![Broken](https://img.shields.io/badge/Belum%20Fix-❌-red) |
-
----
-
 
 **Repo ini di Build Oleh Raven_X**  
 **Dan Plugin Ini 80% Dari Bang Duro92**
