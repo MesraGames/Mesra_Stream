@@ -44,9 +44,7 @@ open class MegaUp : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         val mediaUrl = url.replace("/e/", "/media/").replace("/e2/", "/media/")
-        val displayName = referer
-            ?.takeIf { it.isNotBlank() && !it.startsWith("http", true) }
-            ?: "⌜ YFlix ⌟ | $name"
+        val displayName = referer ?: name
 
         val encodedResult = app.get(mediaUrl, headers = HEADERS)
             .parsedSafe<YflixMediaResponse>()
