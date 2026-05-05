@@ -46,6 +46,7 @@ Dedikasi, kerja keras, dan konsistensi kalian dalam menjaga serta mengembangkan 
 | Midasxxi.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | MovieBox.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | Ngefilm.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
+| Nekokun.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | Nimegami.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | Nomat.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | NontonAnimeID.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
