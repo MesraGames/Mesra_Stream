@@ -1,14 +1,15 @@
-package com.anixcafe
+package com.kazefuri
 
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.net.URLEncoder
 
-class AnixCafeProvider : MainAPI() {
-    override var mainUrl = "https://anixcafe.com"
-    override var name = "AnixCafe😇"
+class KazefuriProvider : MainAPI() {
+    override var mainUrl = "https://sv4.kazefuri.cloud"
+    override var name = "Kazefuri🤩"
     override var lang = "id"
     override val hasMainPage = true
     override val hasDownloadSupport = true
@@ -20,17 +21,21 @@ class AnixCafeProvider : MainAPI() {
     )
 
     override val mainPage = mainPageOf(
-        "$mainUrl/anime/?page=%d" to "Anime List",
-        "$mainUrl/?page=%d" to "Update Terbaru",
+        "$mainUrl/page/%d/" to "Update Terbaru",
+        "$mainUrl/anime/page/%d/?status=&type=&order=update" to "Donghua",
+        "$mainUrl/anime/page/%d/?status=&type=Movie&order=update" to "Movie",
+        "$mainUrl/anime/page/%d/?status=Completed&type=&order=update" to "Completed",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get(request.data.format(page), referer = "$mainUrl/").document
+        val url = if (page == 1) request.data.replace("/page/%d/", "/").replace("page/%d/", "")
+            .replace("%d", page.toString()) else request.data.format(page)
+        val document = app.get(url, referer = "$mainUrl/").document
         val items = document.select("div.listupd article.bs, div.listupd div.bs, article.bs")
             .mapNotNull { it.toSearchResult() }
             .distinctBy { it.url }
 
-        val hasNext = document.select("div.hpage a.r, a.next, .pagination .next").isNotEmpty()
+        val hasNext = document.select("a.next.page-numbers, a.nextpostslink, .pagination a.next").isNotEmpty()
         return newHomePageResponse(request.name, items, hasNext = hasNext)
     }
 
@@ -52,26 +57,36 @@ class AnixCafeProvider : MainAPI() {
             ?.takeIf { it.isNotBlank() }
             ?: throw ErrorLoadingException("Title not found")
 
-        val poster = document.selectFirst(".bigcontent .thumb img, .thumbook img, meta[property=og:image]")
+        val poster = document.selectFirst(".thumb img, .bigcontent .thumb img, .ime img, meta[property=og:image]")
             ?.let { it.attr("content").ifBlank { it.imageUrl() } }
 
-        val type = getType(detailValue(document, "Tipe"), fixedUrl)
-        val year = detailValue(document, "Rilis")?.let(::extractYear)
-            ?: detailValue(document, "Dirilis pada")?.let(::extractYear)
-        val status = getStatus(detailValue(document, "Status"))
-        val tags = document.select(".genxed a[href], .infox a[href*='/genres/']")
+        val typeText = detailValue(document, "Type")
+            ?: detailValue(document, "Tipe")
+            ?: document.selectFirst(".typez")?.text()
+            ?: fixedUrl
+        val type = getType(typeText, fixedUrl)
+        val status = getStatus(detailValue(document, "Status") ?: document.selectFirst(".epx")?.text())
+        val year = listOfNotNull(
+            detailValue(document, "Released"),
+            detailValue(document, "Rilis"),
+            detailValue(document, "Date aired"),
+            document.select(".year, .spe").text()
+        ).firstNotNullOfOrNull { extractYear(it) }
+        val rating = Regex("""(\d+(?:\.\d+)?)""")
+            .find(document.selectFirst(".rating, .rt")?.text().orEmpty())
+            ?.groupValues
+            ?.getOrNull(1)
+            ?.toDoubleOrNull()
+        val tags = document.select(".genxed a[href], .infox a[href*='/genres/'], a[href*='/genres/']")
             .map { it.text().trim() }
             .filter { it.isNotBlank() }
             .distinct()
-
         val plot = document.extractSynopsis()
-
         val episodes = document.select(".eplister a[href], .episodelist a[href], ul.episodios a[href]")
             .mapNotNull { it.toEpisode() }
             .distinctBy { it.data }
-            .sortedByDescending { it.episode ?: -1 }
-
-        val recommendations = document.select(".serieslist a.series[href], .listupd .bsx a[href]")
+            .sortedBy { it.episode ?: Int.MAX_VALUE }
+        val recommendations = document.select(".serieslist a[href], .listupd .bsx a[href]")
             .mapNotNull { it.toSearchResult() }
             .filterNot { it.url == fixedUrl }
             .distinctBy { it.url }
@@ -83,15 +98,18 @@ class AnixCafeProvider : MainAPI() {
                 plot?.let { this.plot = it }
                 this.tags = tags
                 showStatus = status
+                rating?.let { score = Score.from10(it) }
                 this.recommendations = recommendations
                 addEpisodes(DubStatus.Subbed, episodes)
             }
         } else {
-            newMovieLoadResponse(title, fixedUrl, type, fixedUrl) {
+            val data = episodes.firstOrNull()?.data ?: fixedUrl
+            newMovieLoadResponse(title, fixedUrl, type, data) {
                 posterUrl = poster
                 this.year = year
                 plot?.let { this.plot = it }
                 this.tags = tags
+                rating?.let { score = Score.from10(it) }
                 this.recommendations = recommendations
             }
         }
@@ -107,7 +125,7 @@ class AnixCafeProvider : MainAPI() {
         val emitted = linkedSetOf<String>()
         val candidates = linkedSetOf<Pair<String, String>>()
 
-        document.select("#pembed iframe[src], .player-embed iframe[src], .megavid iframe[src]").forEach { iframe ->
+        document.select("#pembed iframe[src], .player-embed iframe[src], .video-content iframe[src]").forEach { iframe ->
             iframe.attr("abs:src").ifBlank { iframe.attr("src") }
                 .takeIf { it.isNotBlank() }
                 ?.let { candidates.add(it to "Default") }
@@ -115,57 +133,55 @@ class AnixCafeProvider : MainAPI() {
 
         document.select("select.mirror option[value]").forEach { option ->
             val label = option.text().trim().ifBlank { "Mirror" }
-            AnixCafeExtractorHelper.decodeMirror(option.attr("value")).forEach { mirror ->
+            KazefuriExtractorHelper.decodeMirror(option.attr("value")).forEach { mirror ->
                 candidates.add(mirror to label)
             }
         }
 
         candidates
-            .filterNot { (url, _) ->
-                AnixCafeExtractorHelper.isNoiseFrame(url) ||
-                    AnixCafeExtractorHelper.isUnsupportedPlayerFrame(url)
-            }
+            .filterNot { (url, _) -> KazefuriExtractorHelper.isNoiseFrame(url) }
             .amap { (url, label) ->
-                AnixCafeExtractorHelper.resolveLink(
-                    url = AnixCafeExtractorHelper.normalizeUrl(url, data) ?: return@amap,
+                KazefuriExtractorHelper.resolveLink(
+                    url = KazefuriExtractorHelper.normalizeUrl(url, data) ?: return@amap,
                     label = label,
                     referer = data,
                     emitted = emitted,
                     subtitleCallback = subtitleCallback,
-                    callback = callback
+                    callback = callback,
                 )
             }
 
-        document.select(".soraddlx a[href], .dlbox a[href], .download a[href], a[href*='mirrored.to'], a[href*='terabox']")
+        document.select(".soraddlx a[href], .dlbox a[href], .download a[href], a[href*='mirrored.to']")
             .mapNotNull { it.attr("abs:href").ifBlank { it.attr("href") }.takeIf(String::isNotBlank) }
             .distinct()
             .forEach { runCatching { loadExtractor(it, data, subtitleCallback, callback) } }
 
-        return true
+        return candidates.isNotEmpty()
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-        val link = selectFirst("a[href]") ?: return null
-        val href = link.attr("abs:href").ifBlank { link.attr("href") }.takeIf { it.isNotBlank() } ?: return null
-        val fixedHref = getProperAnimeLink(fixUrl(href))
+        val link = selectFirst("a[href]") ?: if (tagName() == "a") this else return null
+        val href = link.attr("abs:href").ifBlank { link.attr("href") }.takeIf { it.isNotBlank() }?.let(::fixUrl) ?: return null
+        if (href.contains("/genres/") || href.contains("/season/") || href.contains("/author/")) return null
 
         val title = listOf(
             link.attr("title"),
             selectFirst(".tt h2, .tt, h2, h3")?.text(),
+            selectFirst("img")?.attr("title"),
             selectFirst("img")?.attr("alt")
         ).firstOrNull { !it.isNullOrBlank() }
             ?.cleanTitle()
             ?: return null
 
         val poster = selectFirst("img")?.imageUrl()
-        val type = getType(selectFirst(".typez")?.text(), fixedHref)
+        val type = getType(selectFirst(".typez")?.text(), href)
         val episode = Regex("""Episode\s*(\d+)""", RegexOption.IGNORE_CASE)
             .find(link.attr("title").ifBlank { text() })
             ?.groupValues
             ?.getOrNull(1)
             ?.toIntOrNull()
 
-        return newAnimeSearchResponse(title, fixedHref, type) {
+        return newAnimeSearchResponse(title, href, type) {
             posterUrl = poster
             episode?.let { addSub(it) }
         }
@@ -178,7 +194,7 @@ class AnixCafeProvider : MainAPI() {
             .ifBlank { text().trim() }
         val epNum = selectFirst(".epl-num")?.text()?.trim()?.toDoubleOrNull()
             ?: Regex("""Episode\s*(\d+(?:\.\d+)?)""", RegexOption.IGNORE_CASE)
-                .find(rawTitle)
+                .find(rawTitle.ifBlank { href })
                 ?.groupValues
                 ?.getOrNull(1)
                 ?.toDoubleOrNull()
@@ -189,27 +205,16 @@ class AnixCafeProvider : MainAPI() {
         }
     }
 
-    private fun getProperAnimeLink(url: String): String {
-        if (url.contains("/anime/", true)) return url
-
-        val rel = Regex("""rel=["'](\d+)["']""").find(url)?.groupValues?.getOrNull(1)
-        if (!rel.isNullOrBlank()) return url
-
-        var slug = url.substringBefore("?").trimEnd('/').substringAfterLast("/")
-        slug = slug
-            .substringBefore("-episode-")
-            .substringBefore("-subtitle-indonesia")
-            .replace(Regex("""-season-(\d+)"""), "-$1th-season")
-        return "$mainUrl/anime/$slug/"
-    }
-
     private fun Element.imageUrl(): String? {
         return listOf(
+            attr("abs:data-src"),
+            attr("abs:data-lazy-src"),
+            attr("abs:srcset").substringBefore(" "),
+            attr("abs:src"),
             attr("data-src"),
             attr("data-lazy-src"),
             attr("srcset").substringBefore(" "),
-            attr("src"),
-            attr("abs:src")
+            attr("src")
         ).firstOrNull { it.isNotBlank() }?.let(::fixUrl)
     }
 
@@ -225,14 +230,15 @@ class AnixCafeProvider : MainAPI() {
 
     private fun Document.extractSynopsis(): String? {
         val synopsisElement = selectFirst(
-            ".single-info.bixbox .infox .info-content .desc, " +
-                ".single-info .info-content .desc, " +
+            ".entry-content.entry-content-single p, " +
+                ".entry-content p, " +
                 ".bigcontent .info-content .desc, " +
                 ".bigcontent .desc, " +
-                ".entry-content p"
+                ".synp .entry-content, " +
+                ".desc"
         ) ?: return null
 
-        synopsisElement.select(".colap, script, style").remove()
+        synopsisElement.select("script, style, .keyword").remove()
         return synopsisElement.text()
             .replace(Regex("""\s+"""), " ")
             .trim()
@@ -252,8 +258,8 @@ class AnixCafeProvider : MainAPI() {
         return when {
             value.isNullOrBlank() -> null
             value.contains("ongoing", true) -> ShowStatus.Ongoing
-            value.contains("hiatus", true) -> ShowStatus.Ongoing
-            else -> ShowStatus.Completed
+            value.contains("completed", true) || value.contains("finish", true) -> ShowStatus.Completed
+            else -> null
         }
     }
 
