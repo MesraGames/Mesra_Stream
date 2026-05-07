@@ -1,12 +1,13 @@
-package com.dubbindo
+package com.sontolfilm
 
 import android.content.Context
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 
 @CloudstreamPlugin
-class DubbindoProviderPlugin : Plugin() {
+class SontolFilmProviderPlugin : Plugin() {
     override fun load(context: Context) {
-        registerMainAPI(DubbindoProvider())
+        registerMainAPI(SontolFilmProvider())
+        registerExtractorAPI(HaruPlayer())
     }
 }

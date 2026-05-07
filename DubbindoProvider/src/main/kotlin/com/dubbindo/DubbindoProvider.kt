@@ -1,333 +1,98 @@
 package com.dubbindo
 
-import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.AppUtils.toJson
-import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import com.lagradost.cloudstream3.ErrorLoadingException
+import com.lagradost.cloudstream3.HomePageResponse
+import com.lagradost.cloudstream3.LoadResponse
+import com.lagradost.cloudstream3.MainAPI
+import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.fixUrl
+import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.newHomePageResponse
+import com.lagradost.cloudstream3.newMovieLoadResponse
+import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.INFER_TYPE
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import com.dubbindo.BuildConfig
+import java.net.URLEncoder
 
 class DubbindoProvider : MainAPI() {
     override var mainUrl = "https://www.dubbindo.site"
-    override var name = "Dubbindo"
-    override val hasMainPage = true
+    override var name = "Dubbindo🤐"
     override var lang = "id"
+    override val hasMainPage = true
     override val hasDownloadSupport = true
 
     override val supportedTypes = setOf(
-        TvType.TvSeries,
         TvType.Movie,
-        TvType.Cartoon,
+        TvType.TvSeries,
+        TvType.AnimeMovie,
         TvType.Anime,
     )
 
-    private val USERNAME = BuildConfig.DUBBINDO_USERNAME
-    private val PASSWORD = BuildConfig.DUBBINDO_PASSWORD
-
-    private var sessionCookie = ""
-
-    private val baseHeaders get() = mapOf(
-        "User-Agent" to "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 Chrome/124.0 Mobile Safari/537.36",
-        "Referer"    to "$mainUrl/"
-    )
-
-    private val authedHeaders get() = if (sessionCookie.isNotBlank())
-        baseHeaders + mapOf("Cookie" to sessionCookie)
-    else baseHeaders
-
-    private fun parseCookiePair(header: String): Pair<String, String>? {
-        val part = header.split(";").firstOrNull()?.trim() ?: return null
-        val eq   = part.indexOf('=')
-        if (eq < 0) return null
-        return part.substring(0, eq).trim() to part.substring(eq + 1).trim()
-    }
-
-    private suspend fun doLogin(): Boolean {
-        val getResp     = app.get("$mainUrl/login", headers = baseHeaders)
-        val initCookies = getResp.headers
-            .filter { it.first.equals("set-cookie", ignoreCase = true) }
-            .mapNotNull { parseCookiePair(it.second) }
-            .toMap().toMutableMap()
-
-        val phpSessId = initCookies["PHPSESSID"].orEmpty()
-
-        val postResp = app.post(
-            "$mainUrl/login",
-            data = mapOf(
-                "username"        to USERNAME,
-                "password"        to PASSWORD,
-                "remember_device" to "on"
-            ),
-            headers = baseHeaders + mapOf(
-                "Cookie"       to if (phpSessId.isNotBlank()) "PHPSESSID=$phpSessId" else "",
-                "Content-Type" to "application/x-www-form-urlencoded",
-                "Origin"       to mainUrl,
-                "Referer"      to "$mainUrl/login"
-            ),
-            allowRedirects = false
-        )
-
-        val allCookies = initCookies + postResp.headers
-            .filter { it.first.equals("set-cookie", ignoreCase = true) }
-            .mapNotNull { parseCookiePair(it.second) }
-            .toMap()
-
-        return if (!allCookies["user_id"].isNullOrBlank()) {
-            sessionCookie = allCookies.entries.joinToString("; ") { "${it.key}=${it.value}" }
-            true
-        } else false
-    }
-
-    private suspend fun ensureSession() {
-        if (sessionCookie.isNotBlank()) return
-        doLogin()
-    }
-
-    private suspend fun subscribeChannel(document: Document, pageUrl: String): Boolean {
-        val channelId = document
-            .selectFirst("button.btn-subscribe[data-id]")?.attr("data-id")?.trim()
-            ?: document.selectFirst(".subscribe-btn-container button[data-id]")?.attr("data-id")?.trim()
-            ?: document.selectFirst("button[onclick*=PT_Subscribe]")
-                ?.attr("onclick")
-                ?.let { Regex("""PT_Subscribe\((\d+)""").find(it)?.groupValues?.get(1) }
-            ?: document.selectFirst("input#profile-id")?.attr("value")?.trim()
-            ?: return false
-
-        if (channelId.isBlank()) return false
-
-        val mainSession = document
-            .selectFirst("input.main_session")?.attr("value")?.trim()
-            .orEmpty()
-
-        val subscribeUrl = if (mainSession.isNotBlank())
-            "$mainUrl/aj/subscribe?hash=$mainSession"
-        else
-            "$mainUrl/aj/subscribe"
-
-        val resp = app.post(
-            subscribeUrl,
-            data    = mapOf("user_id" to channelId),
-            headers = authedHeaders + mapOf(
-                "Content-Type"     to "application/x-www-form-urlencoded",
-                "X-Requested-With" to "XMLHttpRequest",
-                "Referer"          to pageUrl,
-                "Origin"           to mainUrl
-            )
-        )
-
-        if (!resp.isSuccessful) return false
-
-        val muteUrl = if (mainSession.isNotBlank())
-            "$mainUrl/aj/user/notify?hash=$mainSession"
-        else
-            "$mainUrl/aj/user/notify"
-
-        app.post(
-            muteUrl,
-            data    = mapOf("user_id" to channelId),
-            headers = authedHeaders + mapOf(
-                "Content-Type"     to "application/x-www-form-urlencoded",
-                "X-Requested-With" to "XMLHttpRequest",
-                "Referer"          to pageUrl,
-                "Origin"           to mainUrl
-            )
-        )
-
-        return true
-    }
-
-    private fun isSubscribeWall(document: Document): Boolean {
-        val playerArea = document.selectFirst("div.video-processing, div.video-player")
-            ?.text().orEmpty()
-        return playerArea.contains("subscribe to watch", ignoreCase = true) ||
-               document.select("video#my-video source, video source").isEmpty()
-    }
-    
-    private fun isVideoInQueue(document: Document): Boolean =
-        document.selectFirst("div.pt_video_player div.video-processing") != null
-
     override val mainPage = mainPageOf(
-        "$mainUrl/videos/latest"              to "Latest Update",
-        "$mainUrl/videos/top"                  to "Most Viewed",
-        "$mainUrl/videos/trending"         to "Trending",
-        "$mainUrl/videos/category/1"      to "Movie",
-        "$mainUrl/videos/category/3"     to "TV Series",
-        "$mainUrl/videos/category/5"     to "Anime Series",
-        "$mainUrl/videos/category/4"     to "Anime Movie",
-        "$mainUrl/videos/category/other" to "Other"
+        "$mainUrl/videos/latest?page_id=%d" to "Latest Videos",
+        "$mainUrl/videos/trending?page_id=%d" to "Trending",
+        "$mainUrl/videos/top?page_id=%d" to "Top Videos",
+        "$mainUrl/videos/category/1?page_id=%d" to "Film Movie",
+        "$mainUrl/videos/category/3?page_id=%d" to "TV Series",
+        "$mainUrl/videos/category/4?page_id=%d" to "Anime Movie",
+        "$mainUrl/videos/category/5?page_id=%d" to "Anime Series",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        ensureSession()
-        val document = app.get("${request.data}?page_id=$page", headers = authedHeaders).document
-        val home = document.select("div.video-wrapper").mapNotNull { it.toCategoryResult() }
-        return newHomePageResponse(
-            list = HomePageList(name = request.name, list = home, isHorizontalImages = true),
-            hasNext = home.isNotEmpty()
-        )
-    }
+        val document = app.get(request.data.format(page), referer = "$mainUrl/").document
+        val items = document.toSearchResults()
 
-    private fun Element.toCategoryResult(): TvSeriesSearchResponse? {
-        val title = selectFirst("div.video-title h4")?.text()?.trim() ?: return null
-        if (title.isEmpty()) return null
-        val href = selectFirst("div.video-thumb a")?.attr("href")
-            ?: selectFirst("a")?.attr("href") ?: return null
-        return newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
-            posterUrl     = fixUrlNull(selectFirst("div.video-thumb img")?.attr("src"))
-            posterHeaders = mapOf("Referer" to mainUrl)
-        }
-    }
-
-    private fun Element.toSearchResult(): TvSeriesSearchResponse? {
-        val title = selectFirst("div.video-list-title h4")?.text()?.trim()
-            ?: selectFirst("h4")?.text()?.trim() ?: return null
-        if (title.isEmpty()) return null
-        val href = selectFirst("div.video-list-image a")?.attr("href")
-            ?: selectFirst("a")?.attr("href") ?: return null
-        return newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
-            posterUrl     = fixUrlNull(selectFirst("img")?.attr("src"))
-            posterHeaders = mapOf("Referer" to mainUrl)
-        }
-    }
-
-    private fun Element.toRelatedResult(): TvSeriesSearchResponse? {
-        val title = selectFirst("div.video-title a")?.text()?.trim()
-            ?: selectFirst("a")?.text()?.trim() ?: return null
-        val href = selectFirst("div.ra-thumb a")?.attr("href")
-            ?: selectFirst("a")?.attr("href") ?: return null
-        return newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
-            posterUrl     = fixUrlNull(selectFirst("img")?.attr("src"))
-            posterHeaders = mapOf("Referer" to mainUrl)
-        }
+        val hasNext = document.select("a[title='Next Page'], ul.pagination a[href*='page_id=${page + 1}']").isNotEmpty()
+        return newHomePageResponse(request.name, items, hasNext = hasNext)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        ensureSession()
-        val results = mutableListOf<SearchResponse>()
-        for (i in 1..10) {
-            val page = app.get(
-                "$mainUrl/search?keyword=$query&page_id=$i",
-                headers = authedHeaders
-            ).document.select("div.video-list").mapNotNull { it.toSearchResult() }
-            results.addAll(page)
-            if (page.isEmpty()) break
-        }
-        return results
+        val encoded = URLEncoder.encode(query.trim(), "UTF-8")
+        val document = app.get("$mainUrl/search?keyword=$encoded", referer = "$mainUrl/").document
+        return document.toSearchResults()
     }
 
-    private fun parseVideoSources(doc: Document): List<Video> =
-        doc.select("video#my-video source, video source").mapNotNull { el ->
-            val src = el.attr("src").trim().ifEmpty { return@mapNotNull null }
-            Video(
-                src  = src,
-                res  = el.attr("res").ifBlank { el.attr("data-quality").replace(Regex("[^0-9]"), "") },
-                type = el.attr("type").ifBlank { "video/mp4" }
-            )
-        }
+    override suspend fun load(url: String): LoadResponse {
+        val fixedUrl = fixUrl(url)
+        val document = app.get(fixedUrl, referer = "$mainUrl/").document
 
-    private suspend fun fetchVideoSources(url: String): Pair<Document, List<Video>> {
-        var doc    = app.get(url, headers = authedHeaders).document
-        var videos = parseVideoSources(doc)
+        val title = document.selectFirst("h1[itemprop=title], meta[property=og:title], meta[name=title], title")
+            ?.let { it.attr("content").ifBlank { it.text() } }
+            ?.cleanTitle()
+            ?.takeIf { it.isNotBlank() }
+            ?: throw ErrorLoadingException("Title not found")
 
-        if (videos.isNotEmpty()) return doc to videos
+        val poster = document.selectFirst("meta[property=og:image], meta[name=thumbnail], video[poster]")
+            ?.let { it.attr("content").ifBlank { it.attr("abs:poster").ifBlank { it.attr("poster") } } }
+            ?.takeIf { it.isNotBlank() }
+            ?.let(::fixUrl)
 
-        if (isSubscribeWall(doc)) {
-            subscribeChannel(doc, url)
-            doc    = app.get(url, headers = authedHeaders).document
-            videos = parseVideoSources(doc)
-        }
+        val plot = document.selectFirst("meta[property=og:description], meta[name=description]")
+            ?.attr("content")
+            ?.decodeHtml()
+            ?.trim()
+            ?.ifBlank { null }
 
-        if (videos.isNotEmpty()) return doc to videos
+        val category = document.selectFirst(".video-category a, a[href*='/videos/category/']")?.text()?.trim()
+        val type = getType(category, title)
+        val recommendations = document.toSearchResults()
+            .filterNot { it.url == fixedUrl }
 
-        sessionCookie = ""
-        if (doLogin()) {
-            doc    = app.get(url, headers = authedHeaders).document
-            videos = parseVideoSources(doc)
-
-            if (videos.isEmpty() && isSubscribeWall(doc)) {
-                subscribeChannel(doc, url)
-                doc    = app.get(url, headers = authedHeaders).document
-                videos = parseVideoSources(doc)
-            }
-        }
-
-        return doc to videos
-    }
-
-    override suspend fun load(url: String): LoadResponse? {
-        ensureSession()
-
-        val document = app.get(url, headers = authedHeaders).document
-
-        val title = (document.selectFirst("meta[name=title]")?.attr("content")
-            ?: document.title()).replace(" | UVideo", "").trim()
-        if (title.isEmpty()) return null
-
-        val poster = document.selectFirst("meta[property=og:image]")?.attr("content")
-        val tags   = document.select("div.pt_categories li a").map { it.text() }
-
-        return if (url.contains("/articles/read/")) {
-            val description    = document.selectFirst("div.read-article-description article")?.text()
-            val videoLinks     = document.select("div.read-article-text a")
-                .map { it.attr("href") }.filter { it.isNotBlank() }
-            val recommendations = document.select("div.related-video-wrapper")
-                .mapNotNull { it.toRelatedResult() }
-            newMovieLoadResponse(title, url, TvType.Movie, videoLinks.toJson()) {
-                posterUrl = poster; plot = description
-                this.tags = tags; this.recommendations = recommendations
-            }
-        } else {
-            val description = document.select("div.watch-video-description p")
-                .text().replace("\u2063", "").trim()
-            val recommendations = document.select("div.related-video-wrapper")
-                .mapNotNull { it.toRelatedResult() }
-                
-            if (isVideoInQueue(document)) {
-                return newMovieLoadResponse(title, url, TvType.Movie, "[]") {
-                    posterUrl = poster
-                    plot = "⏳ Video ini sedang dalam antrian pemrosesan.\nHarap buka kembali dalam beberapa menit atau jam."
-                    this.tags = tags
-                }
-            }
-
-            subscribeChannel(document, url)
-
-            val (_, videos) = fetchVideoSources(url)
-
-            newMovieLoadResponse(title, url, TvType.Movie, videos.toJson()) {
-                posterUrl = poster; plot = description
-                this.tags = tags; this.recommendations = recommendations
-            }
-        }
-    }
-
-    private fun isPresignedS3(url: String) =
-        url.contains("X-Amz-Signature", ignoreCase = true) ||
-        url.contains("X-Amz-Credential", ignoreCase = true) ||
-        url.contains("wasabisys.com", ignoreCase = true) ||
-        url.contains("amazonaws.com", ignoreCase = true)
-
-    private suspend fun resolveVideoUrl(src: String): String {
-        if (isPresignedS3(src)) return src
-        if (!src.contains("s3.dubbindo.my.id")) return src
-
-        return try {
-            val resp = app.get(
-                src,
-                headers  = authedHeaders,
-                allowRedirects = false
-            )
-            val location = resp.headers
-                .firstOrNull { it.first.equals("location", ignoreCase = true) }
-                ?.second
-            if (!location.isNullOrBlank()) location else src
-        } catch (e: Exception) {
-            src
+        return newMovieLoadResponse(title, fixedUrl, type, fixedUrl) {
+            posterUrl = poster
+            backgroundPosterUrl = poster
+            plot?.let { this.plot = it }
+            this.tags = listOfNotNull(category).filter { it.isNotBlank() }
+            this.recommendations = recommendations
+            this.year = extractYear(title)
         }
     }
 
@@ -337,41 +102,149 @@ class DubbindoProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val streamHeaders = authedHeaders + mapOf("Referer" to mainUrl)
+        val document = app.get(data, referer = "$mainUrl/").document
+        val links = linkedMapOf<String, String>()
 
-        val videos = tryParseJson<List<Video>>(data)
-        if (videos != null) {
-            videos.forEach { video ->
-                val rawSrc = video.src ?: return@forEach
-                val src = resolveVideoUrl(rawSrc)
+        document.select("video source[src], video[src], .download-placement a[href], a[href*='.mp4'], a[href*='.m3u8']")
+            .forEach { source ->
+                val url = source.attr("abs:src")
+                    .ifBlank { source.attr("abs:href") }
+                    .ifBlank { source.attr("src") }
+                    .ifBlank { source.attr("href") }
+                    .takeIf { it.isNotBlank() }
+                    ?.let(::fixUrl)
+                    ?: return@forEach
+                if (!isMediaUrl(url)) return@forEach
 
-                if (src.endsWith(".m3u8") || video.type.orEmpty().startsWith("video/")
-                    || video.type == "application/x-mpegURL") {
-                    callback.invoke(
-                        newExtractorLink(name, name, src, INFER_TYPE) {
-                            quality = video.res?.toIntOrNull() ?: Qualities.Unknown.value
-                            headers = if (isPresignedS3(src)) emptyMap() else streamHeaders
-                        }
-                    )
-                } else {
-                    loadExtractor(src, mainUrl, subtitleCallback, callback)
-                }
+                val label = source.attr("label")
+                    .ifBlank { source.attr("title") }
+                    .ifBlank { source.attr("data-quality") }
+                    .ifBlank { source.attr("res").takeIf { it.isNotBlank() }?.let { "${it}p" }.orEmpty() }
+                    .ifBlank { source.text().trim() }
+                    .ifBlank { labelFromUrl(url) }
+                links[url] = label
             }
-            return videos.isNotEmpty()
+
+        extractMediaFromHtml(document.html()).forEach { url ->
+            links.putIfAbsent(url, labelFromUrl(url))
         }
 
-        val urls = tryParseJson<List<String>>(data)
-        if (urls != null) {
-            urls.forEach { if (it.isNotBlank()) loadExtractor(it, mainUrl, subtitleCallback, callback) }
-            return urls.isNotEmpty()
+        links.forEach { (url, label) ->
+            callback(
+                newExtractorLink(
+                    source = name,
+                    name = "$name $label",
+                    url = url,
+                    type = if (url.contains(".m3u8", true)) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
+                ) {
+                    referer = data
+                    quality = qualityFromLabel(label)
+                    headers = mapOf(
+                        "Referer" to data,
+                        "Range" to "bytes=0-",
+                    )
+                }
+            )
         }
 
-        return false
+        return links.isNotEmpty()
     }
 
-    data class Video(
-        val src: String? = null,
-        val res: String? = null,
-        val type: String? = null,
-    )
+    private fun Document.toSearchResults(): List<SearchResponse> {
+        return select("a[href*='/watch/']")
+            .mapNotNull { it.toSearchResultFromLink() }
+            .distinctBy { it.url }
+    }
+
+    private fun Element.toSearchResultFromLink(): SearchResponse? {
+        val link = this
+        val href = link.attr("abs:href").ifBlank { link.attr("href") }.takeIf { it.isNotBlank() }?.let(::fixUrl) ?: return null
+        if (!href.contains("/watch/", true)) return null
+        val card = parents().firstOrNull { parent ->
+            parent.`is`(".video-list, .video-wrapper, .video-latest-list, .related-video-wrapper, [data-id], [data-sidebar-video]")
+        } ?: parent() ?: this
+
+        val title = listOf(
+            link.selectFirst("h4[title]")?.attr("title"),
+            link.selectFirst("h4")?.text(),
+            card.selectFirst("h4[title]")?.attr("title"),
+            card.selectFirst(".video-title a, .video-list-title h4, h4")?.text(),
+            card.selectFirst("img[alt]")?.attr("alt"),
+            link.attr("title"),
+            link.text(),
+        ).firstOrNull { !it.isNullOrBlank() }
+            ?.cleanTitle()
+            ?: return null
+
+        val poster = card.selectFirst("img")?.imageUrl()
+        val category = card.selectFirst(".video-category a, a[href*='/videos/category/']")?.text()?.trim()
+
+        return newMovieSearchResponse(title, href, getType(category, title)) {
+            posterUrl = poster
+        }
+    }
+
+    private fun Element.imageUrl(): String? {
+        return listOf(
+            attr("abs:data-src"),
+            attr("abs:data-lazy-src"),
+            attr("abs:src"),
+            attr("data-src"),
+            attr("data-lazy-src"),
+            attr("src"),
+        ).firstOrNull { it.isNotBlank() }?.let(::fixUrl)
+    }
+
+    private fun getType(category: String?, title: String): TvType {
+        val value = "${category.orEmpty()} $title"
+        return when {
+            value.contains("anime series", true) || value.contains("episode", true) && value.contains("anime", true) -> TvType.Anime
+            value.contains("anime movie", true) -> TvType.AnimeMovie
+            value.contains("tv series", true) || value.contains("episode", true) -> TvType.TvSeries
+            else -> TvType.Movie
+        }
+    }
+
+    private fun qualityFromLabel(value: String): Int {
+        return Regex("""\b(2160|1440|1080|720|480|360|240)\b""")
+            .find(value)
+            ?.value
+            ?.toIntOrNull()
+            ?: Qualities.Unknown.value
+    }
+
+    private fun extractMediaFromHtml(html: String): List<String> {
+        return Regex("""https?://[^\s"'<>\\]+?\.(?:mp4|m3u8)(?:[^\s"'<>\\]*)?""", RegexOption.IGNORE_CASE)
+            .findAll(html.replace("\\/", "/").replace("&amp;", "&"))
+            .map { it.value.trimEnd(',', ')', ']') }
+            .filter(::isMediaUrl)
+            .distinct()
+            .toList()
+    }
+
+    private fun isMediaUrl(url: String): Boolean {
+        return Regex("""(?i)\.(mp4|m3u8)(?:$|[?#&])""").containsMatchIn(url)
+    }
+
+    private fun labelFromUrl(url: String): String {
+        return Regex("""(?i)(2160|1440|1080|720|480|360|240)p""")
+            .find(url)
+            ?.value
+            ?: if (url.contains(".m3u8", true)) "HLS" else "MP4"
+    }
+
+    private fun extractYear(value: String): Int? {
+        return Regex("""(?:19|20)\d{2}""").find(value)?.value?.toIntOrNull()
+    }
+
+    private fun String.decodeHtml(): String {
+        return org.jsoup.Jsoup.parse(this).text()
+    }
+
+    private fun String.cleanTitle(): String {
+        return decodeHtml()
+            .replace(Regex("""^\s*[\u200B-\u200D\uFEFF\u2063]+"""), "")
+            .replace(Regex("""\s+"""), " ")
+            .trim()
+    }
 }
