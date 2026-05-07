@@ -1,80 +1,88 @@
-## ✨ Ucapan Terima Kasih untuk Repo Cloudstream ✨
+# 🎭 Cloudstream Repository List
 
-Dengan penuh rasa hormat dan apresiasi, kami mengucapkan **terima kasih sebesar-besarnya** kepada seluruh kontributor dan pengembang **Repo Cloudstream**.  
-Dedikasi, kerja keras, dan konsistensi kalian dalam menjaga serta mengembangkan provider sangat berarti bagi para pengguna. 🙏
+<p align="center">
+  <img src="https://img.shields.io/badge/Maintained%3F-yes-green.svg" alt="Maintained">
+  <img src="https://img.shields.io/badge/Status-Active-brightgreen" alt="Status">
+  <img src="https://img.shields.io/badge/Build-Raven__X-blue" alt="Builder">
+</p>
 
----
+## ✨ Ucapan Terima Kasih
 
-## 📡 Status Provider
-
-### 🟢 Aktif
-| Provider | Status |
-|----------|--------|
-| AnichinMoe.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Animasu.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| AnimeSail.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| AnixCafe.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Anoboy.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| AuraTail.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| AutoEmbed.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Azmovies.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Bstation.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Cinemax21.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Donghub.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Drakorid.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Dramabox.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Dutamovie.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Dramaid.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Dubbindo.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| FilmApik.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Filmkita.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| FreeReels.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Fufafilm.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Funmovieslix.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Hidoristream.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| IdlixProvider.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Indomax21.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Kawanfilm.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Kissasian.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Kisskh.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Kitanonton.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Klikxxi.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Kuramanime.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Kazefuri.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Kuronime.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| LayarKaca.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Layarasia.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Melolo.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Melongmovie.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Midasxxi.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| MovieBox.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Ngefilm.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Nekokun.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Nimegami.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Nomat.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| NontonAnimeID.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Oploverz.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Oppadrama.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Otakudesu.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Pencurimovie.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Pmsm.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Samehadaku.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Sontofilm.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Sflix.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| SoraStream.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Winbu.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
-| Zoronime.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
+Dengan penuh rasa hormat dan apresiasi, kami mengucapkan **terima kasih sebesar-besarnya** kepada seluruh kontributor dan pengembang. Dedikasi, kerja keras, dan konsistensi kalian dalam mengembangkan provider sangat berarti bagi seluruh komunitas. 🙏
 
 ---
 
+## 📡 Daftar Provider Aktif
+> Koleksi provider terbaik untuk pengalaman menonton tanpa batas.
 
-**Repo ini di Build Oleh Raven_X**  
-**Dan Plugin Ini 80% Dari Bang Duro92**
-***TERIMA KASIH SEBESAR_BESARNYA KEPADA PENGEMBANG YANG TIDAK BISA SAYA SEBUTKAN 1-PerSatu***
+| No | 🔌 Nama Provider | ⚡ Status Sistem |
+|:--:|:--- |:---:|
+| 01 | **AnichinMoe** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 02 | **Animasu** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 03 | **AnimeSail** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 04 | **AnixCafe** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 05 | **Anoboy** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 06 | **AuraTail** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 07 | **AutoEmbed** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 08 | **Azmovies** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 09 | **Bstation** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 10 | **Cinemax21** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 11 | **Donghub** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 12 | **Drakorid** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 13 | **Dramabox** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 14 | **Dutamovie** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 15 | **Dramaid** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 16 | **Dubbindo** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 17 | **FilmApik** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 18 | **Filmkita** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 19 | **FreeReels** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 20 | **Fufafilm** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 21 | **Funmovieslix** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 22 | **Hidoristream** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 23 | **IdlixProvider** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 24 | **Indomax21** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 25 | **Kawanfilm** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 26 | **Kissasian** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 27 | **Kisskh** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 28 | **Kitanonton** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 29 | **Klikxxi** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 30 | **Kuramanime** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 31 | **Kazefuri** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 32 | **Kuronime** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 33 | **LayarKaca** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 34 | **Layarasia** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 35 | **Melolo** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 36 | **Melongmovie** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 37 | **Midasxxi** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 38 | **MovieBox** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 39 | **Ngefilm** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 40 | **Nekokun** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 41 | **Nimegami** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 42 | **Nomat** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 43 | **NontonAnimeID** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 44 | **Oploverz** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 45 | **Oppadrama** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 46 | **Otakudesu** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 47 | **Pencurimovie** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 48 | **Pmsm** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 49 | **Samehadaku** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 50 | **Sontofilm** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 51 | **Sflix** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 52 | **SoraStream** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 53 | **Winbu** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 54 | **Zoronime** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+
+---
+
+## 🛠️ Credits & Attribution
+
+* **Main Build:** `Raven_X`
+* **Logic & Plugin:** 80% Original by `Duro92`
+* **Contributors:** Terima kasih banyak kepada seluruh pengembang yang telah berkontribusi namun tidak bisa kami sebutkan satu per satu.
 
 ---
 
 ## 🌟 Penutup
-> *Terus berkarya dan berkembang — komunitas ini kuat karena kalian semua.*
+> *"Terus berkarya dan berkembang — komunitas ini kuat karena kalian semua."*
 
 🚀 **Terima kasih telah menghadirkan hiburan tanpa batas!**
