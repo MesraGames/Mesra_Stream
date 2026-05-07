@@ -24,6 +24,7 @@ Dedikasi, kerja keras, dan konsistensi kalian dalam menjaga serta mengembangkan 
 | Drakorid.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | Dramabox.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | Dutamovie.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
+| Dramaid.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | Dubbindo.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | FilmApik.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | Filmkita.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
@@ -32,12 +33,14 @@ Dedikasi, kerja keras, dan konsistensi kalian dalam menjaga serta mengembangkan 
 | Funmovieslix.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | Hidoristream.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | IdlixProvider.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
+| Indomax21.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | Kawanfilm.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | Kissasian.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | Kisskh.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | Kitanonton.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | Klikxxi.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | Kuramanime.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
+| Kazefuri.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | Kuronime.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | LayarKaca.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | Layarasia.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
@@ -56,6 +59,7 @@ Dedikasi, kerja keras, dan konsistensi kalian dalam menjaga serta mengembangkan 
 | Pencurimovie.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | Pmsm.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | Samehadaku.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
+| Sontofilm.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | Sflix.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | SoraStream.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
 | Winbu.cs3 | ![Active](https://img.shields.io/badge/Active-✔️-brightgreen) |
@@ -66,6 +70,7 @@ Dedikasi, kerja keras, dan konsistensi kalian dalam menjaga serta mengembangkan 
 
 **Repo ini di Build Oleh Raven_X**  
 **Dan Plugin Ini 80% Dari Bang Duro92**
+***TERIMA KASIH SEBESAR_BESARNYA KEPADA PENGEMBANG YANG TIDAK BISA SAYA SEBUTKAN 1-PerSatu***
 
 ---
 
