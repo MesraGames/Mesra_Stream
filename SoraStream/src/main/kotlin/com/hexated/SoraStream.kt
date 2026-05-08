@@ -7,17 +7,19 @@ import com.hexated.SoraExtractor.invokeIdlix
 import com.hexated.SoraExtractor.invokeYflix
 import com.hexated.SoraExtractor.invokeVidfast
 import com.hexated.SoraExtractor.invokeVidlink
-import com.hexated.SoraExtractor.invokeVidsrc
-import com.hexated.SoraExtractor.invokeVidsrcme
-import com.hexated.SoraExtractor.invokeVidsrccc
 import com.hexated.SoraExtractor.invokeVixsrc
+import com.hexated.SoraExtractor.invokeVideasy
+import com.hexated.SoraExtractor.invokeVidzen
+import com.hexated.SoraExtractor.invokeCinezo
+import com.hexated.SoraExtractor.invokeWave
+import com.hexated.SoraExtractor.invokeUhdmovies
+import com.hexated.SoraExtractor.invokeMultimovies
 import com.hexated.SoraExtractor.invokeWatchsomuch
 import com.hexated.SoraExtractor.invokeWyzie
 import com.hexated.SoraExtractor.invokeCineSrc
 import com.hexated.SoraExtractor.invokeMafiaEmbed
 import com.hexated.SoraExtractor.invokeAutoEmbed
 import com.hexated.SoraExtractor.invoke2Embed
-import com.hexated.SoraExtractor.invokeVidsrcMov
 import com.hexated.SoraExtractor.invokeMultiEmbed
 import com.hexated.SoraExtractor.invokeNinetv
 import com.hexated.SoraExtractor.invokeRidomovies
@@ -42,6 +44,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
@@ -82,7 +86,7 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val jikanAPI = "https://api.jikan.moe/v4"
 
         private const val apiKey = "b030404650f279792a8d3287232358e3"
-        private const val sourceConcurrency = 6
+        private const val sourceConcurrency = 8
 
         /** ALL SOURCES */
         const val idlixAPI = "https://z1.idlixku.com"
@@ -95,6 +99,12 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val watchSomuchAPI = "https://watchsomuch.tv"
         const val vidlinkAPI = "https://vidlink.pro"
         const val vidfastAPI = "https://vidfast.pro"
+        const val videasyAPI = "https://player.videasy.net"
+        const val vidzenAPI = "https://vidzen.fun"
+        const val cinezoAPI = "https://player.cinezo.live"
+        const val waveAPI = "https://wavembed.lol"
+        const val uhdmoviesAPI = "https://uhdmovies.pink"
+        const val multimoviesAPI = "https://multimovies.fyi"
         const val wyzieAPI = "https://sub.wyzie.ru"
         const val vixsrcAPI = "https://vixsrc.to"
         const val cinesrcAPI = "https://cinesrc.st"
@@ -109,7 +119,7 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val watch32API = "https://watch32.sx"
         const val vembedAPI = "https://vembed.stream"
         const val smashyStreamAPI = "https://embed.smashystream.com"
-        const val riveStreamAPI = "https://rivestream.org"
+        const val riveStreamAPI = "https://www.rivestream.app"
 
         enum class SourceGroup {
             CORE,
@@ -125,19 +135,21 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             val movie: Boolean = true,
             val tv: Boolean = true,
             val subtitleOnly: Boolean = false,
+            val timeoutMs: Long = 20_000L,
         )
 
         val sourceRegistry = listOf(
-            SourceDescriptor("vidsrccc", SourceGroup.CORE, 10),
-            SourceDescriptor("vidsrcme", SourceGroup.CORE, 25),
             SourceDescriptor("vidlink", SourceGroup.CORE, 30),
             SourceDescriptor("vidfast", SourceGroup.CORE, 40),
+            SourceDescriptor("videasy", SourceGroup.CORE, 45),
             SourceDescriptor("vixsrc", SourceGroup.EMBED, 50),
+            SourceDescriptor("vidzen", SourceGroup.EMBED, 55),
+            SourceDescriptor("cinezo", SourceGroup.EMBED, 58),
             SourceDescriptor("cinesrc", SourceGroup.EMBED, 60),
             SourceDescriptor("mafiaembed", SourceGroup.EMBED, 70),
             SourceDescriptor("autoembed", SourceGroup.EMBED, 80),
             SourceDescriptor("2embed", SourceGroup.EMBED, 90),
-            SourceDescriptor("vidsrcmov", SourceGroup.EMBED, 100),
+            SourceDescriptor("wave", SourceGroup.EMBED, 100),
             SourceDescriptor("multiembed", SourceGroup.EMBED, 110),
             SourceDescriptor("ninetv", SourceGroup.EMBED, 120),
             SourceDescriptor("ridomovies", SourceGroup.EMBED, 130),
@@ -145,14 +157,16 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             SourceDescriptor("rivestream", SourceGroup.EMBED, 150),
             SourceDescriptor("smashystream", SourceGroup.EMBED, 160),
             SourceDescriptor("vembed", SourceGroup.EMBED, 170, tv = false),
-            SourceDescriptor("wyzie", SourceGroup.SUBTITLE, 180, subtitleOnly = true),
-            SourceDescriptor("watchsomuch", SourceGroup.SUBTITLE, 190, subtitleOnly = true),
+            SourceDescriptor("yflix", SourceGroup.EMBED, 175),
             SourceDescriptor("idlix", SourceGroup.FALLBACK, 200),
             SourceDescriptor("azmovies", SourceGroup.FALLBACK, 210, tv = false),
             SourceDescriptor("noxx", SourceGroup.FALLBACK, 220, movie = false),
             SourceDescriptor("watch32", SourceGroup.FALLBACK, 230),
+            SourceDescriptor("uhdmovies", SourceGroup.FALLBACK, 235),
+            SourceDescriptor("multimovies", SourceGroup.FALLBACK, 238),
             SourceDescriptor("kisskh", SourceGroup.FALLBACK, 240),
-            SourceDescriptor("yflix", SourceGroup.EMBED, 250),
+            SourceDescriptor("wyzie", SourceGroup.SUBTITLE, 260, subtitleOnly = true, timeoutMs = 10_000L),
+            SourceDescriptor("watchsomuch", SourceGroup.SUBTITLE, 270, subtitleOnly = true, timeoutMs = 10_000L),
         ).sortedBy { it.priority }
 
         suspend fun getApiBase(): String {
@@ -443,7 +457,11 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 async {
                     semaphore.withPermit {
                         try {
-                            invokeSource(source, res, subtitleCallback, callback)
+                            withTimeout(source.timeoutMs) {
+                                invokeSource(source, res, subtitleCallback, callback)
+                            }
+                        } catch (e: TimeoutCancellationException) {
+                            logError(e)
                         } catch (e: CancellationException) {
                             throw e
                         } catch (e: Exception) {
@@ -464,31 +482,17 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         callback: (ExtractorLink) -> Unit,
     ) {
         when (source.key) {
-            "vidsrccc" -> invokeVidsrccc(
-                res.id,
-                res.imdbId,
-                res.season,
-                res.episode,
-                subtitleCallback,
-                callback
-            )
-
-            "vidsrcme" -> invokeVidsrcme(
-                res.id,
-                res.season,
-                res.episode,
-                subtitleCallback,
-                callback
-            )
-
             "vixsrc" -> invokeVixsrc(res.id, res.season, res.episode, callback)
             "vidlink" -> invokeVidlink(res.id, res.season, res.episode, callback)
             "vidfast" -> invokeVidfast(res.id, res.season, res.episode, subtitleCallback, callback)
+            "videasy" -> invokeVideasy(res.id, res.season, res.episode, callback)
+            "vidzen" -> invokeVidzen(res.id, res.season, res.episode, callback)
+            "cinezo" -> invokeCinezo(res.id, res.season, res.episode, callback)
             "cinesrc" -> invokeCineSrc(res.id, res.season, res.episode, callback)
             "mafiaembed" -> invokeMafiaEmbed(res.id, res.season, res.episode, callback)
             "autoembed" -> invokeAutoEmbed(res.id, res.season, res.episode, subtitleCallback, callback)
             "2embed" -> invoke2Embed(res.id, res.season, res.episode, callback)
-            "vidsrcmov" -> invokeVidsrcMov(res.id, res.imdbId, res.season, res.episode, callback)
+            "wave" -> invokeWave(res.id, res.season, res.episode, callback)
             "multiembed" -> invokeMultiEmbed(
                 res.id,
                 res.imdbId,
@@ -536,16 +540,31 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                 callback
             )
 
-            "kisskh" -> if (res.isAsian || res.isAnime || res.isBollywood) {
-                invokeKisskh(
-                    res.titleCandidates(),
-                    res.year,
-                    res.season,
-                    res.episode,
-                    subtitleCallback,
-                    callback
-                )
-            }
+            "uhdmovies" -> invokeUhdmovies(
+                res.titleCandidates(),
+                res.year,
+                res.season,
+                res.episode,
+                callback
+            )
+
+            "multimovies" -> invokeMultimovies(
+                res.titleCandidates(),
+                res.year,
+                res.season,
+                res.episode,
+                subtitleCallback,
+                callback
+            )
+
+            "kisskh" -> invokeKisskh(
+                res.titleCandidates(),
+                res.year,
+                res.season,
+                res.episode,
+                subtitleCallback,
+                callback
+            )
 
             "yflix" -> invokeYflix(
                 res.id,
