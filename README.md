@@ -65,12 +65,13 @@ Dengan penuh rasa hormat dan apresiasi, kami mengucapkan **terima kasih sebesar-
 | 46 | **Otakudesu** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
 | 47 | **Pencurimovie** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
 | 48 | **Pmsm** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
-| 49 | **Samehadaku** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
-| 50 | **Sontofilm** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
-| 51 | **Sflix** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
-| 52 | **SoraStream** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
-| 53 | **Winbu** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
-| 54 | **Zoronime** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 49 | **PusatFilm21** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 50 | **Samehadaku** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 51 | **Sontofilm** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 52 | **Sflix** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 53 | **SoraStream** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 54 | **Winbu** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 55 | **Zoronime** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
 
 ---
 
