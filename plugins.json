@@ -497,6 +497,27 @@
         "name": "Funmovieslix"
     },
     {
+        "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://gojodesu.com&size=%size%",
+        "fileHash": "sha256-0931265b694e5d72cdd4398e45b4789a160f73e8984e842e5ea2d5dcc2319c04",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 25433,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "duro92"
+        ],
+        "tvTypes": [
+            "AnimeMovie",
+            "OVA",
+            "Anime"
+        ],
+        "version": 1,
+        "internalName": "GojodesuProvider",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/GojodesuProvider.cs3",
+        "name": "GojodesuProvider"
+    },
+    {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://v8.hidoristream.online&size=%size%",
         "fileHash": "sha256-a199cce70aac1d0f8fa8faab152d41c44a88dc0011a501cbcc1913ee6b2e702e",
         "apiVersion": 1,
