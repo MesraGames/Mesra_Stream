@@ -2,6 +2,13 @@ package com.hexated
 
 import android.content.SharedPreferences
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.hexated.SoraExtractor.invokeAnimePahe
+import com.hexated.SoraExtractor.invokeAnimeTosho
+import com.hexated.SoraExtractor.invokeAniWave
+import com.hexated.SoraExtractor.invokeGogoAnime
+import com.hexated.SoraExtractor.invokeHiAnime
+import com.hexated.SoraExtractor.invokeInstalledAnimeProviders
+import com.hexated.SoraExtractor.invokeKimCartoon
 import com.hexated.SoraExtractor.invokeKisskh
 import com.hexated.SoraExtractor.invokeIdlix
 import com.hexated.SoraExtractor.invokeYflix
@@ -56,17 +63,16 @@ import kotlinx.coroutines.sync.withPermit
 import kotlin.math.roundToInt
 
 
-open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider() {
-    override var name = "SoraStream🤠"
+open class SoraAnime(val sharedPref: SharedPreferences? = null) : TmdbProvider() {
+    override var name = "SoraAnime"
     override val hasMainPage = true
     override val instantLinkLoading = true
     override val useMetaLoadResponse = true
     override val hasChromecastSupport = true
     override val hasQuickSearch = true
     override val supportedTypes = setOf(
-        TvType.Movie,
-        TvType.TvSeries,
         TvType.Anime,
+        TvType.AnimeMovie,
     )
 
     val token: String? = sharedPref?.getString("token", null)
@@ -88,7 +94,7 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val malsyncAPI = "https://api.malsync.moe"
         const val jikanAPI = "https://api.jikan.moe/v4"
 
-        private const val apiKey = "b030404650f279792a8d3287232358e3"
+        const val apiKey = "b030404650f279792a8d3287232358e3"
         private const val sourceConcurrency = 8
 
         /** ALL SOURCES */
@@ -126,6 +132,12 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         const val vembedAPI = "https://vembed.stream"
         const val smashyStreamAPI = "https://embed.smashystream.com"
         const val riveStreamAPI = "https://www.rivestream.app"
+        const val hiAnimeAPI = "https://hianime.dk"
+        const val gogoAnimeAPI = "https://gogoanimes.cv"
+        const val animePaheAPI = "https://animepahe.ch"
+        const val kimCartoonAPI = "https://kimcartoon.com.co"
+        const val aniWaveAPI = "https://aniwaves.ru"
+        const val animeToshoAPI = "https://animetosho.org"
 
         enum class SourceGroup {
             CORE,
@@ -145,13 +157,19 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         )
 
         val sourceRegistry = listOf(
+            SourceDescriptor("hianime", SourceGroup.CORE, 10, timeoutMs = 15_000L),
+            SourceDescriptor("gogoanime", SourceGroup.CORE, 20, timeoutMs = 15_000L),
+            SourceDescriptor("animepahe", SourceGroup.CORE, 25, timeoutMs = 15_000L),
+            SourceDescriptor("aniwave", SourceGroup.CORE, 26, timeoutMs = 15_000L),
+            SourceDescriptor("installedanime", SourceGroup.FALLBACK, 190, timeoutMs = 30_000L),
+            SourceDescriptor("kimcartoon", SourceGroup.FALLBACK, 242, timeoutMs = 15_000L),
+            SourceDescriptor("animetosho", SourceGroup.FALLBACK, 245, timeoutMs = 15_000L),
             SourceDescriptor("vidlink", SourceGroup.CORE, 30),
             SourceDescriptor("vidfast", SourceGroup.CORE, 40),
             SourceDescriptor("videasy", SourceGroup.CORE, 45),
             SourceDescriptor("vixsrc", SourceGroup.EMBED, 50),
             SourceDescriptor("vidzen", SourceGroup.EMBED, 55),
             SourceDescriptor("cinezo", SourceGroup.EMBED, 58),
-            SourceDescriptor("xprime", SourceGroup.EMBED, 59),
             SourceDescriptor("cinesrc", SourceGroup.EMBED, 60),
             SourceDescriptor("mapple", SourceGroup.EMBED, 62),
             SourceDescriptor("cinemaos", SourceGroup.EMBED, 64),
@@ -167,13 +185,6 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             SourceDescriptor("smashystream", SourceGroup.EMBED, 160),
             SourceDescriptor("vembed", SourceGroup.EMBED, 170, tv = false),
             SourceDescriptor("yflix", SourceGroup.EMBED, 175),
-            SourceDescriptor("idlix", SourceGroup.FALLBACK, 200),
-            SourceDescriptor("azmovies", SourceGroup.FALLBACK, 210, tv = false),
-            SourceDescriptor("noxx", SourceGroup.FALLBACK, 220, movie = false),
-            SourceDescriptor("watch32", SourceGroup.FALLBACK, 230),
-            SourceDescriptor("uhdmovies", SourceGroup.FALLBACK, 235),
-            SourceDescriptor("multimovies", SourceGroup.FALLBACK, 238),
-            SourceDescriptor("kisskh", SourceGroup.FALLBACK, 240),
             SourceDescriptor("wyzie", SourceGroup.SUBTITLE, 260, subtitleOnly = true, timeoutMs = 10_000L),
             SourceDescriptor("watchsomuch", SourceGroup.SUBTITLE, 270, subtitleOnly = true, timeoutMs = 10_000L),
         ).sortedBy { it.priority }
@@ -221,26 +232,12 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     }
 
     override val mainPage = mainPageOf(
-        "/trending/all/day?api_key=$apiKey&region=US" to "Trending",
-        "/movie/popular?api_key=$apiKey&region=US" to "Popular Movies",
-        "/tv/popular?api_key=$apiKey&region=US&with_original_language=en" to "Popular TV Shows",
-        "/tv/airing_today?api_key=$apiKey&region=US&with_original_language=en" to "Airing Today TV Shows",
-        "/discover/tv?api_key=$apiKey&with_networks=213" to "Netflix",
-        "/discover/tv?api_key=$apiKey&with_networks=1024" to "Amazon",
-        "/discover/tv?api_key=$apiKey&with_networks=2739" to "Disney+",
-        "/discover/tv?api_key=$apiKey&with_networks=453" to "Hulu",
-        "/discover/tv?api_key=$apiKey&with_networks=2552" to "Apple TV+",
-        "/discover/tv?api_key=$apiKey&with_networks=49" to "HBO",
-        "/discover/tv?api_key=$apiKey&with_networks=4330" to "Paramount+",
-        "/discover/tv?api_key=$apiKey&with_networks=3353" to "Peacock",
-        "/movie/top_rated?api_key=$apiKey&region=US" to "Top Rated Movies",
-        "/tv/top_rated?api_key=$apiKey&region=US" to "Top Rated TV Shows",
-        "/movie/upcoming?api_key=$apiKey&region=US" to "Upcoming Movies",
-        "/discover/tv?api_key=$apiKey&with_original_language=ko" to "Korean Shows",
-        "/discover/tv?api_key=$apiKey&with_keywords=210024|222243&sort_by=popularity.desc&air_date.lte=${getDate().today}&air_date.gte=${getDate().today}" to "Airing Today Anime",
-        "/discover/tv?api_key=$apiKey&with_keywords=210024|222243&sort_by=popularity.desc&air_date.lte=${getDate().nextWeek}&air_date.gte=${getDate().today}" to "On The Air Anime",
-        "/discover/tv?api_key=$apiKey&with_keywords=210024|222243" to "Anime",
-        "/discover/movie?api_key=$apiKey&with_keywords=210024|222243" to "Anime Movies",
+        "/discover/tv?api_key=$apiKey&with_keywords=210024|222243&with_original_language=ja&sort_by=popularity.desc" to "Popular Anime",
+        "/discover/tv?api_key=$apiKey&with_keywords=210024|222243&with_original_language=ja&sort_by=first_air_date.desc" to "Latest Anime",
+        "/discover/tv?api_key=$apiKey&with_keywords=210024|222243&with_original_language=ja&air_date.lte=${getDate().today}&air_date.gte=${getDate().today}&sort_by=popularity.desc" to "Airing Today",
+        "/discover/tv?api_key=$apiKey&with_keywords=210024|222243&with_original_language=ja&air_date.lte=${getDate().nextWeek}&air_date.gte=${getDate().today}&sort_by=popularity.desc" to "On The Air",
+        "/discover/movie?api_key=$apiKey&with_keywords=210024|222243&with_original_language=ja&sort_by=popularity.desc" to "Anime Movies",
+        "/discover/tv?api_key=$apiKey&with_keywords=210024|222243&with_original_language=zh&sort_by=popularity.desc" to "Donghua",
     )
 
     private fun getImageUrl(link: String?): String? {
@@ -266,10 +263,11 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     }
 
     private fun Media.toSearchResponse(type: String? = null): SearchResponse? {
-        return newMovieSearchResponse(
+        val mediaType = mediaType ?: type
+        return newAnimeSearchResponse(
             title ?: name ?: originalTitle ?: return null,
-            Data(id = id, type = mediaType ?: type).toJson(),
-            TvType.Movie,
+            Data(id = id, type = mediaType).toJson(),
+            if (mediaType == "movie") TvType.AnimeMovie else TvType.Anime,
         ) {
             this.posterUrl = getImageUrl(posterPath)
             this.score= Score.from10(voteAverage)
@@ -281,9 +279,16 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     override suspend fun search(query: String): List<SearchResponse>? {
         val apiBase = getApiBase()
         return app.get("$apiBase/search/multi?api_key=$apiKey&language=${langCode ?: "en-US"}&query=$query&page=1&include_adult=${settingsForProvider.enableAdult}")
-            .parsedSafe<Results>()?.results?.mapNotNull { media ->
-                media.toSearchResponse()
+            .parsedSafe<Results>()?.results
+            ?.filter { media ->
+                media.mediaType == "movie" || media.mediaType == "tv" || media.mediaType == null
             }
+            ?.filter { media ->
+                media.originalLanguage == "ja" || media.originalLanguage == "zh" ||
+                    media.title?.contains("anime", true) == true ||
+                    media.name?.contains("anime", true) == true
+            }
+            ?.mapNotNull { media -> media.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse? {
@@ -325,6 +330,15 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
 
         val isCartoon = genres?.contains("Animation") ?: false
         val isAnime = isCartoon && (res.original_language == "zh" || res.original_language == "ja")
+        if (!isAnime) return null
+        val animeIds = runCatching {
+            convertTmdbToAnimeId(
+                title,
+                releaseDate,
+                releaseDate,
+                if (type == TvType.Movie) TvType.AnimeMovie else TvType.Anime
+            )
+        }.getOrNull()
         val isAsian = !isAnime && (res.original_language == "zh" || res.original_language == "ko")
         val isBollywood = res.production_countries?.any { it.name == "India" } ?: false
 
@@ -357,6 +371,9 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                                 data.type,
                                 eps.seasonNumber,
                                 eps.episodeNumber,
+                                aniId = animeIds?.id?.toString(),
+                                animeId = animeIds?.id?.toString(),
+                                malId = animeIds?.idMal,
                                 title = title,
                                 year = season.airDate?.split("-")?.first()?.toIntOrNull(),
                                 orgTitle = orgTitle,
@@ -409,7 +426,7 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
             newMovieLoadResponse(
                 title,
                 url,
-                TvType.Movie,
+                if (isAnime) TvType.AnimeMovie else TvType.Movie,
                 LinkData(
                     data.id,
                     res.external_ids?.imdb_id,
@@ -419,6 +436,9 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
                     year = year,
                     orgTitle = orgTitle,
                     isAnime = isAnime,
+                    aniId = animeIds?.id?.toString(),
+                    animeId = animeIds?.id?.toString(),
+                    malId = animeIds?.idMal,
                     jpTitle = res.alternative_titles?.results?.find { it.iso_3166_1 == "JP" }?.title,
                     airedDate = res.releaseDate
                         ?: res.firstAirDate,
@@ -491,6 +511,56 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         callback: (ExtractorLink) -> Unit,
     ) {
         when (source.key) {
+            "hianime" -> invokeHiAnime(
+                res.malId,
+                res.titleCandidates(),
+                res.season,
+                res.episode,
+                subtitleCallback,
+                callback
+            )
+            "gogoanime" -> invokeGogoAnime(
+                res.titleCandidates(),
+                res.season,
+                res.episode,
+                subtitleCallback,
+                callback
+            )
+            "animepahe" -> invokeAnimePahe(
+                res.titleCandidates(),
+                res.season,
+                res.episode,
+                subtitleCallback,
+                callback
+            )
+            "aniwave" -> invokeAniWave(
+                res.titleCandidates(),
+                res.season,
+                res.episode,
+                subtitleCallback,
+                callback
+            )
+            "kimcartoon" -> invokeKimCartoon(
+                res.titleCandidates(),
+                res.season,
+                res.episode,
+                subtitleCallback,
+                callback
+            )
+            "animetosho" -> invokeAnimeTosho(
+                res.titleCandidates(),
+                res.season,
+                res.episode,
+                subtitleCallback,
+                callback
+            )
+            "installedanime" -> invokeInstalledAnimeProviders(
+                res.titleCandidates(),
+                res.season,
+                res.episode,
+                subtitleCallback,
+                callback
+            )
             "vixsrc" -> invokeVixsrc(res.id, res.season, res.episode, callback)
             "vidlink" -> invokeVidlink(res.id, res.season, res.episode, callback)
             "vidfast" -> invokeVidfast(res.id, res.season, res.episode, subtitleCallback, callback)
@@ -590,7 +660,7 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
     }
 
     private fun LinkData.titleCandidates(): List<String> {
-        return listOfNotNull(title, orgTitle)
+        return listOfNotNull(title, jpTitle, orgTitle)
             .map { it.trim() }
             .filter { it.isNotBlank() }
             .distinct()
@@ -605,6 +675,7 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         val episode: Int? = null,
         val aniId: String? = null,
         val animeId: String? = null,
+        val malId: Int? = null,
         val title: String? = null,
         val year: Int? = null,
         val orgTitle: String? = null,
@@ -636,6 +707,7 @@ open class SoraStream(val sharedPref: SharedPreferences? = null) : TmdbProvider(
         @param:JsonProperty("name") val name: String? = null,
         @param:JsonProperty("title") val title: String? = null,
         @param:JsonProperty("original_title") val originalTitle: String? = null,
+        @param:JsonProperty("original_language") val originalLanguage: String? = null,
         @param:JsonProperty("media_type") val mediaType: String? = null,
         @param:JsonProperty("poster_path") val posterPath: String? = null,
         @param:JsonProperty("vote_average") val voteAverage: Double? = null,

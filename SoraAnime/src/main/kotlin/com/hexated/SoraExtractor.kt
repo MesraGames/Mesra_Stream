@@ -21,7 +21,7 @@ import org.jsoup.nodes.Element
 import java.net.URLDecoder
 import java.net.URLEncoder
 
-object SoraExtractor : SoraStream() {
+object SoraExtractor : SoraAnime() {
 
     suspend fun invokeIdlix(
         title: String? = null,
@@ -925,6 +925,522 @@ object SoraExtractor : SoraStream() {
 
         invokeWebviewEmbedSource("Cinezo", url, "$cinezoAPI/", cinezoAPI, callback, useOkhttp = false)
     }
+
+    suspend fun invokeHiAnime(
+        malId: Int?,
+        titleCandidates: List<String>,
+        season: Int?,
+        episode: Int?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val ep = episode ?: 1
+        val urls = buildList {
+            malId?.let { id ->
+                val json = runCatching {
+                    app.get(
+                        "$hiAnimeAPI/ajax/mal?mal=$id&ep=$ep&ts=${System.currentTimeMillis() / 1000}",
+                        referer = "$hiAnimeAPI/",
+                        headers = animeBrowserHeaders(hiAnimeAPI)
+                    ).text
+                }.getOrNull()
+                collectHiAnimeMalUrls(json).forEach { add(it) }
+            }
+
+            val match = findHiAnimeTitle(titleCandidates) ?: return@buildList
+            val watchUrl = match.url.replace(Regex("""/ep-\d+/?$"""), "/ep-$ep")
+            add(watchUrl)
+        }.distinct()
+
+        urls.forEach { url ->
+            loadAnimeEmbed("HiAnime", url, "$hiAnimeAPI/", hiAnimeAPI, subtitleCallback, callback)
+        }
+    }
+
+    suspend fun invokeGogoAnime(
+        titleCandidates: List<String>,
+        season: Int?,
+        episode: Int?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val match = findWordPressAnimeTitle(
+            gogoAnimeAPI,
+            titleCandidates,
+            "a[href*='/anime/'][title]",
+            "title",
+        ) ?: return
+        val slug = match.url.trimEnd('/').substringAfterLast("/")
+        val episodeUrl = "$gogoAnimeAPI/$slug-episode-${episode ?: 1}/"
+        val urls = collectWordPressEmbedUrls(episodeUrl, gogoAnimeAPI)
+
+        urls.forEach { url ->
+            loadAnimeEmbed("GogoAnime", url, episodeUrl, gogoAnimeAPI, subtitleCallback, callback)
+        }
+    }
+
+    suspend fun invokeAnimePahe(
+        titleCandidates: List<String>,
+        season: Int?,
+        episode: Int?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val match = findWordPressAnimeTitle(
+            animePaheAPI,
+            titleCandidates,
+            "a[href*='/series/'][title]",
+            "title",
+        ) ?: return
+        val seriesDocument = app.get(match.url, headers = animeBrowserHeaders(animePaheAPI)).document
+        val ep = episode ?: 1
+        val episodeUrl = seriesDocument.select("a[href]")
+            .firstOrNull { link ->
+                val href = link.absUrl("href")
+                href.contains("-episode-$ep-", true) ||
+                    href.contains("-episode-$ep/", true) ||
+                    link.selectFirst(".epl-num, .epcur")?.text()?.trim()?.equals(ep.toString(), true) == true
+            }?.absUrl("href") ?: return
+
+        val urls = collectWordPressEmbedUrls(episodeUrl, animePaheAPI)
+        urls.forEach { url ->
+            loadAnimeEmbed("AnimePahe", url, episodeUrl, animePaheAPI, subtitleCallback, callback)
+        }
+    }
+
+    suspend fun invokeAniWave(
+        titleCandidates: List<String>,
+        season: Int?,
+        episode: Int?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val match = findAniWaveTitle(titleCandidates) ?: return
+        val animeId = match.url.substringAfterLast("-").toIntOrNull() ?: return
+        val episodeId = findAniWaveEpisodeId(animeId, episode ?: 1) ?: return
+        val serverHtml = app.get(
+            "$aniWaveAPI/ajax/server/list?servers=$episodeId",
+            referer = match.url,
+            headers = animeAjaxHeaders(aniWaveAPI)
+        ).parsedSafe<AniWaveAjaxResponse>()?.result ?: return
+
+        Jsoup.parse(serverHtml).select("[data-link-id]").mapNotNull { it.attr("data-link-id") }
+            .distinct()
+            .forEach { linkId ->
+                val sourceUrl = app.get(
+                    "$aniWaveAPI/ajax/sources?id=${linkId.urlEncodeCompat()}",
+                    referer = match.url,
+                    headers = animeAjaxHeaders(aniWaveAPI)
+                ).parsedSafe<AniWaveSourceResponse>()?.result?.url
+                    ?: return@forEach
+                loadAnimeEmbed("AniWave", sourceUrl, match.url, aniWaveAPI, subtitleCallback, callback)
+            }
+    }
+
+    suspend fun invokeKimCartoon(
+        titleCandidates: List<String>,
+        season: Int?,
+        episode: Int?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val match = findWordPressAnimeTitle(
+            kimCartoonAPI,
+            titleCandidates,
+            "a.series[href*='/cartoon/']",
+            "title",
+            allowSeasonSuffix = true,
+        ) ?: return
+        val document = app.get(match.url, headers = animeBrowserHeaders(kimCartoonAPI)).document
+        val ep = episode ?: 1
+        val episodeUrl = document.select("a[href]")
+            .firstOrNull { link ->
+                val href = link.absUrl("href")
+                href.contains("-episode-$ep/", true) ||
+                    link.selectFirst(".epl-num, .epcur")?.text()?.trim()?.equals(ep.toString(), true) == true
+            }?.absUrl("href") ?: return
+
+        val urls = collectKimCartoonEmbedUrls(episodeUrl)
+        urls.forEach { url ->
+            loadAnimeEmbed("KimCartoon", url, episodeUrl, kimCartoonAPI, subtitleCallback, callback)
+        }
+    }
+
+    suspend fun invokeAnimeTosho(
+        titleCandidates: List<String>,
+        season: Int?,
+        episode: Int?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val title = titleCandidates.firstOrNull() ?: return
+        val query = buildString {
+            append(title)
+            episode?.let { append(" $it") }
+        }
+        val document = app.get(
+            "$animeToshoAPI/search?q=${query.urlEncodeCompat()}",
+            referer = "$animeToshoAPI/",
+            headers = animeBrowserHeaders(animeToshoAPI)
+        ).document
+
+        document.select(".home_list_entry").take(4).forEach { entry ->
+            val entryTitle = entry.selectFirst(".link a")?.text() ?: return@forEach
+            if (!animeToshoTitleMatches(entryTitle, titleCandidates, episode)) return@forEach
+            entry.select("a.dllink[href]").forEach { link ->
+                val label = link.text().trim()
+                if (label.equals("Torrent", true) || label.equals("NZB", true)) return@forEach
+                val url = link.absUrl("href")
+                if (url.isBlank()) return@forEach
+                loadExtractor(url, "$animeToshoAPI/", subtitleCallback) { callback(it) }
+            }
+        }
+    }
+
+    suspend fun invokeInstalledAnimeProviders(
+        titleCandidates: List<String>,
+        season: Int?,
+        episode: Int?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        installedAnimeProviders().forEach { provider ->
+            runCatching {
+                val searchResult = provider.search(titleCandidates.firstOrNull() ?: return@forEach).orEmpty()
+                    .firstOrNull { result ->
+                        providerSearchAllowed(result) && animeTitleMatches(result.name, titleCandidates)
+                    } ?: return@forEach
+
+                val loadResponse = provider.load(searchResult.url) ?: return@forEach
+                val episodeData = loadResponseEpisodeData(loadResponse, episode)
+                episodeData.forEach { data ->
+                    provider.loadLinks(data, false, subtitleCallback, callback)
+                }
+            }.onFailure { logError(it) }
+        }
+    }
+
+    private data class AnimeTitleMatch(val title: String, val url: String)
+
+    private suspend fun findAniWaveTitle(titleCandidates: List<String>): AnimeTitleMatch? {
+        titleCandidates.forEach { query ->
+            val document = app.get(
+                "$aniWaveAPI/filter?keyword=${query.urlEncodeCompat()}",
+                referer = "$aniWaveAPI/home",
+                headers = animeBrowserHeaders(aniWaveAPI)
+            ).document
+            document.select("a.d-title[href*='/watch/']").forEach { link ->
+                val title = link.text().trim()
+                val jpTitle = link.attr("data-jp").trim()
+                if (animeTitleMatches(title, titleCandidates) || animeTitleMatches(jpTitle, titleCandidates)) {
+                    return AnimeTitleMatch(title, fixUrl(link.attr("href"), aniWaveAPI))
+                }
+            }
+        }
+        return null
+    }
+
+    private suspend fun findAniWaveEpisodeId(animeId: Int, episode: Int): String? {
+        val html = app.get(
+            "$aniWaveAPI/ajax/episode/list/$animeId",
+            referer = "$aniWaveAPI/",
+            headers = animeAjaxHeaders(aniWaveAPI)
+        ).parsedSafe<AniWaveAjaxResponse>()?.result ?: return null
+        return Jsoup.parse(html).select("a[data-ids][data-num]")
+            .firstOrNull { it.attr("data-num").toDoubleOrNull()?.toInt() == episode }
+            ?.attr("data-ids")
+            ?.takeIf { it.isNotBlank() }
+    }
+
+    private suspend fun findHiAnimeTitle(titleCandidates: List<String>): AnimeTitleMatch? {
+        titleCandidates.forEach { query ->
+            val document = app.get(
+                "$hiAnimeAPI/search?keyword=${query.urlEncodeCompat()}",
+                referer = "$hiAnimeAPI/home",
+                headers = animeBrowserHeaders(hiAnimeAPI)
+            ).document
+            document.select("a.d-title[href]").forEach { link ->
+                val title = link.text().trim()
+                val jpTitle = link.attr("data-jp").trim()
+                if (animeTitleMatches(title, titleCandidates) || animeTitleMatches(jpTitle, titleCandidates)) {
+                    return AnimeTitleMatch(title, fixUrl(link.attr("href"), hiAnimeAPI))
+                }
+            }
+        }
+        return null
+    }
+
+    private suspend fun findWordPressAnimeTitle(
+        baseUrl: String,
+        titleCandidates: List<String>,
+        selector: String,
+        titleAttribute: String,
+        allowSeasonSuffix: Boolean = false,
+    ): AnimeTitleMatch? {
+        titleCandidates.forEach { query ->
+            val document = app.get(
+                "$baseUrl/?s=${query.urlEncodeCompat()}",
+                referer = "$baseUrl/",
+                headers = animeBrowserHeaders(baseUrl)
+            ).document
+            document.select(selector).forEach { link ->
+                val title = link.attr(titleAttribute).ifBlank { link.text() }.trim()
+                if (animeTitleMatches(title, titleCandidates) ||
+                    (allowSeasonSuffix && animeTitleMatches(stripSeasonSuffix(title), titleCandidates))
+                ) {
+                    return AnimeTitleMatch(title, link.absUrl("href").ifBlank { fixUrl(link.attr("href"), baseUrl) })
+                }
+            }
+        }
+        return null
+    }
+
+    private fun collectHiAnimeMalUrls(json: String?): List<String> {
+        if (json.isNullOrBlank()) return emptyList()
+        val root = runCatching { JSONObject(json) }.getOrNull() ?: return emptyList()
+        if (root.optInt("status") != 200) return emptyList()
+        val result = root.optJSONObject("result") ?: root
+        return buildList {
+            result.keys().forEach { provider ->
+                val item = result.optJSONObject(provider) ?: return@forEach
+                listOf("sub", "dub", "raw").forEach { type ->
+                    item.optJSONObject(type)?.optString("url")?.takeIf { it.isNotBlank() }?.let { add(it) }
+                }
+            }
+        }
+    }
+
+    private suspend fun collectWordPressEmbedUrls(episodeUrl: String, baseUrl: String): List<String> {
+        val document = app.get(episodeUrl, referer = "$baseUrl/", headers = animeBrowserHeaders(baseUrl)).document
+        return buildList {
+            document.select("[data-video]").forEach { element ->
+                decodeIframeUrl(element.attr("data-video"), baseUrl)?.let { add(it) }
+            }
+            document.select("iframe[src], iframe[data-src]").forEach { iframe ->
+                iframe.absUrl("src").ifBlank { iframe.absUrl("data-src") }
+                    .ifBlank { fixUrl(iframe.attr("src").ifBlank { iframe.attr("data-src") }, baseUrl) }
+                    .takeIf { it.isNotBlank() }?.let { add(it) }
+            }
+        }.distinct()
+    }
+
+    private suspend fun collectKimCartoonEmbedUrls(episodeUrl: String): List<String> {
+        val document = app.get(episodeUrl, referer = "$kimCartoonAPI/", headers = animeBrowserHeaders(kimCartoonAPI)).document
+        return buildList {
+            document.select("[data-embed]").forEach { element ->
+                element.absUrl("data-embed").ifBlank { fixUrl(element.attr("data-embed"), kimCartoonAPI) }
+                    .takeIf { it.isNotBlank() }?.let { add(it) }
+            }
+            collectWordPressEmbedUrls(episodeUrl, kimCartoonAPI).forEach { add(it) }
+        }.distinct()
+    }
+
+    private suspend fun loadAnimeEmbed(
+        sourceName: String,
+        embedUrl: String,
+        referer: String,
+        origin: String,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val fixedUrl = fixUrl(embedUrl, origin)
+        var emitted = false
+        loadExtractor(fixedUrl, referer, subtitleCallback) { link ->
+            emitted = true
+            callback(link)
+        }
+        if (emitted) return
+
+        val nestedUrl = runCatching {
+            val document = app.get(fixedUrl, referer = referer, headers = animeBrowserHeaders(origin)).document
+            document.selectFirst("iframe[src], iframe[data-src]")
+                ?.let { it.absUrl("src").ifBlank { it.absUrl("data-src") } }
+        }.getOrNull()
+        if (!nestedUrl.isNullOrBlank() && nestedUrl != fixedUrl) {
+            loadExtractor(nestedUrl, fixedUrl, subtitleCallback) { link ->
+                emitted = true
+                callback(link)
+            }
+        }
+        if (!emitted) {
+            invokeWebviewEmbedSource(sourceName, nestedUrl ?: fixedUrl, referer, origin, callback, useOkhttp = false)
+        }
+    }
+
+    private fun decodeIframeUrl(rawHtml: String, baseUrl: String): String? {
+        val decoded = Jsoup.parse(rawHtml).text()
+        return Jsoup.parse(decoded, baseUrl).selectFirst("iframe[src], iframe[data-src]")
+            ?.let { it.absUrl("src").ifBlank { it.absUrl("data-src") } }
+            ?.takeIf { it.isNotBlank() }
+    }
+
+    private fun animeTitleMatches(title: String?, candidates: List<String>): Boolean {
+        val normalizedTitle = normalizeAnimeTitle(title)
+        if (normalizedTitle.isBlank()) return false
+        return candidates.any { normalizeAnimeTitle(it) == normalizedTitle }
+    }
+
+    private fun normalizeAnimeTitle(title: String?): String {
+        return title.orEmpty()
+            .lowercase()
+            .replace(Regex("""\[[^\]]*]|\([^)]*\)"""), " ")
+            .replace(Regex("""\b(?:english|subbed|dubbed|sub|dub|hd)\b"""), " ")
+            .replace(Regex("""[^a-z0-9]+"""), " ")
+            .trim()
+    }
+
+    private fun stripSeasonSuffix(title: String): String {
+        return title
+            .replace(Regex("""\bseason\s+\d+\b.*$""", RegexOption.IGNORE_CASE), "")
+            .trim()
+    }
+
+    private fun animeToshoTitleMatches(
+        entryTitle: String,
+        candidates: List<String>,
+        episode: Int?,
+    ): Boolean {
+        val normalizedEntry = normalizeAnimeTitle(entryTitle)
+        val titleMatches = candidates.any { normalizedEntry.contains(normalizeAnimeTitle(it)) }
+        if (!titleMatches) return false
+        val ep = episode ?: return true
+        val padded = ep.toString().padStart(2, '0')
+        return Regex("""(?i)(?:s\d+e0*$ep\b|\b0*$ep\b|-\s*0*$ep\b|episode\s+0*$ep\b)""")
+            .containsMatchIn(entryTitle) || normalizedEntry.contains("e$padded")
+    }
+
+    private fun animeBrowserHeaders(origin: String): Map<String, String> {
+        return mapOf(
+            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Origin" to origin,
+            "Referer" to "$origin/",
+            "User-Agent" to USER_AGENT,
+        )
+    }
+
+    private fun animeAjaxHeaders(origin: String): Map<String, String> {
+        return animeBrowserHeaders(origin) + mapOf(
+            "Accept" to "application/json, text/javascript, */*; q=0.01",
+            "X-Requested-With" to "XMLHttpRequest",
+        )
+    }
+
+    private fun installedAnimeProviders(): List<MainAPI> {
+        val allowedNames = setOf(
+            "samehadaku",
+            "otakudesu",
+            "anoboy",
+            "kuramanime",
+            "kuronime",
+            "nekokun",
+            "nimegami",
+            "oploverz",
+            "anixcafe",
+            "animexin",
+            "animesail",
+            "animasu",
+            "anichin",
+            "auratail",
+            "gojodesu",
+            "hidoristream",
+            "nontonanimeid",
+            "zoronime",
+        )
+        val apiHolder = APIHolder::class.java
+        return listOf("apis", "allProviders", "allApis", "apiProviders")
+            .firstNotNullOfOrNull { fieldName ->
+                runCatching {
+                    val field = apiHolder.getDeclaredField(fieldName)
+                    field.isAccessible = true
+                    @Suppress("UNCHECKED_CAST")
+                    (field.get(APIHolder) as? List<MainAPI>)?.filter { api ->
+                        api.name != name &&
+                            api.supportedTypes.any { it == TvType.Anime || it == TvType.AnimeMovie || it == TvType.OVA } &&
+                            allowedNames.any { allowed -> normalizeProviderName(api.name).contains(allowed) }
+                    }
+                }.getOrNull()
+            }.orEmpty()
+    }
+
+    private fun providerSearchAllowed(result: SearchResponse): Boolean {
+        return result.type == TvType.Anime || result.type == TvType.AnimeMovie || result.type == TvType.OVA
+    }
+
+    private fun loadResponseEpisodeData(response: LoadResponse, episode: Int?): List<String> {
+        val episodes = extractEpisodeObjects(response)
+        if (episodes.isNotEmpty()) {
+            val matches = if (episode == null) {
+                episodes.take(1)
+            } else {
+                episodes.filter { getReflectInt(it, "episode") == episode }
+                    .ifEmpty { episodes.filter { getReflectString(it, "name")?.contains(Regex("""\b0*${episode}\b""")) == true } }
+            }
+            return matches.mapNotNull { getReflectString(it, "data") }.distinct()
+        }
+
+        return listOfNotNull(
+            getReflectString(response, "dataUrl"),
+            getReflectString(response, "url")
+        ).distinct()
+    }
+
+    private fun extractEpisodeObjects(response: LoadResponse): List<Any> {
+        val rawEpisodes = getReflectValue(response, "episodes") ?: return emptyList()
+        return when (rawEpisodes) {
+            is Map<*, *> -> rawEpisodes.values.flatMap { value ->
+                when (value) {
+                    is Iterable<*> -> value.filterNotNull()
+                    else -> listOfNotNull(value)
+                }
+            }
+            is Iterable<*> -> rawEpisodes.filterNotNull()
+            else -> emptyList()
+        }
+    }
+
+    private fun getReflectValue(target: Any, name: String): Any? {
+        return runCatching {
+            val field = target.javaClass.getDeclaredField(name)
+            field.isAccessible = true
+            field.get(target)
+        }.getOrNull() ?: runCatching {
+            target.javaClass.methods.firstOrNull { method ->
+                method.parameterTypes.isEmpty() &&
+                    method.name.equals("get${name.replaceFirstChar { it.uppercase() }}", true)
+            }?.invoke(target)
+        }.getOrNull()
+    }
+
+    private fun getReflectString(target: Any, name: String): String? {
+        return getReflectValue(target, name)?.toString()?.takeIf { it.isNotBlank() && it != "null" }
+    }
+
+    private fun getReflectInt(target: Any, name: String): Int? {
+        return when (val value = getReflectValue(target, name)) {
+            is Int -> value
+            is Number -> value.toInt()
+            is String -> value.toIntOrNull()
+            else -> null
+        }
+    }
+
+    private fun normalizeProviderName(value: String): String {
+        return value.lowercase().replace(Regex("""[^a-z0-9]+"""), "")
+    }
+
+    private data class AniWaveAjaxResponse(
+        val status: Int? = null,
+        val result: String? = null,
+    )
+
+    private data class AniWaveSourceResponse(
+        val status: Int? = null,
+        val result: AniWaveSourceResult? = null,
+    )
+
+    private data class AniWaveSourceResult(
+        val url: String? = null,
+    )
 
     suspend fun invokeMapple(
         tmdbId: Int?,

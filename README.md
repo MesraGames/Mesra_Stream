@@ -71,8 +71,9 @@ Dengan penuh rasa hormat dan apresiasi, kami mengucapkan **terima kasih sebesar-
 | 52 | **Sontofilm** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
 | 53 | **Sflix** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
 | 54 | **SoraStream** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
-| 55 | **Winbu** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
-| 56 | **Zoronime** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 55 | **SoraAnime** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 56 | **Winbu** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
+| 57 | **Zoronime** | ![Active](https://img.shields.io/badge/-Online-brightgreen) |
 
 ---
 
