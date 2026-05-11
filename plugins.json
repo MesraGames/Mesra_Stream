@@ -541,10 +541,10 @@
     },
     {
         "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/idlix.png",
-        "fileHash": "sha256-cdb5b08483d8440368b19057d820ddd482aea8247cfbbab8868511537fc3591f",
+        "fileHash": "sha256-e0249205ffb544f2199d64c23cc909222a96b75c82cfb91525fb5a3e500932ce",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 52856,
+        "fileSize": 52857,
         "status": 1,
         "language": "id",
         "authors": [
@@ -951,25 +951,25 @@
         "name": "Ngefilm"
     },
     {
-        "iconUrl": "https://www.google.com/s2/favicons?domain=nimegami.id&sz=%size%",
-        "fileHash": "sha256-669b9730ca332276c2fb416b7feba1735222867f1f083f72ccad9b4d5b0788df",
+        "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://nimegami.id&size=%size%",
+        "fileHash": "sha256-0b5af10b2d51c7bdf11b0e98a8a9a7429b0c8fb4cd04da8ac116603804264b9d",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 23820,
+        "fileSize": 36756,
         "status": 1,
         "language": "id",
         "authors": [
-            "Raven_X"
+            "duro92"
         ],
         "tvTypes": [
             "AnimeMovie",
-            "Anime",
-            "OVA"
+            "OVA",
+            "Anime"
         ],
-        "version": 12,
-        "internalName": "nimegami",
-        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/nimegami.cs3",
-        "name": "nimegami"
+        "version": 1,
+        "internalName": "NimegamiProvider",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/NimegamiProvider.cs3",
+        "name": "NimegamiProvider"
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://nomat.site&size=%size%",
@@ -1038,10 +1038,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://45.11.57.243&size=%size%",
-        "fileHash": "sha256-4be315ed15db60c4cd0e3230a23120a8166a41b9cc40c2101114a5dff3e6dd03",
+        "fileHash": "sha256-2b445ba626a1c201ab1a14d99dbb80f3c733d7dab1e7c5956d278ff65e8d291c",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 20819,
+        "fileSize": 21853,
         "status": 1,
         "language": "id",
         "authors": [
@@ -1052,7 +1052,7 @@
             "TvSeries",
             "Movie"
         ],
-        "version": 11,
+        "version": 15,
         "internalName": "Oppadrama",
         "description": "Oppadrama",
         "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Oppadrama.cs3",
