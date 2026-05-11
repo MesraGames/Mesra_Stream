@@ -1,13 +1,13 @@
 // use an integer for version numbers
-version = 2
+version = 6
 
 
 cloudstream {
     language = "id"
     // All of these properties are optional, you can safely remove them
 
-    // description = "Lorem Ipsum"
-     authors = listOf("Hexated, Duro92")
+    description = "AnimeSail — Streaming Anime, Donghua Subtitle Indonesia"
+     authors = listOf("Miku")
 
     /**
      * Status int as the following:
@@ -23,5 +23,5 @@ cloudstream {
         "OVA",
     )
 
-    iconUrl = "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://154.26.137.28&size=%size%"
+    iconUrl = "https://aghanim.xyz/wp-content/themes/animesail/assets/images/ico.png"
 }
