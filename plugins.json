@@ -1212,11 +1212,33 @@
         "name": "SontolFilmProvider"
     },
     {
-        "iconUrl": "https://github.com/duro92/ExtCloud/blob/main/SoraStream/Icon.png",
-        "fileHash": "sha256-28f6ae7a4273514bd853402f69dd1a97626b43123f2d030e87ba7668fa29a128",
+        "iconUrl": "https://github.com/duro92/ExtCloud/blob/main/SoraAnime/Icon.png",
+        "fileHash": "sha256-19ede9452c393662efff88d810f2ee9af4b7162e8921634673857884e1fc4eb7",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 275638,
+        "fileSize": 314870,
+        "status": 1,
+        "language": "en",
+        "authors": [
+            "Hexated",
+            "Sora"
+        ],
+        "tvTypes": [
+            "Anime",
+            "AnimeMovie"
+        ],
+        "version": 1,
+        "internalName": "SoraAnime",
+        "description": "Anime-only provider based on SoraStream sources",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/SoraAnime.cs3",
+        "name": "SoraAnime"
+    },
+    {
+        "iconUrl": "https://github.com/duro92/ExtCloud/blob/main/SoraStream/Icon.png",
+        "fileHash": "sha256-1a68090cb44ad9c019b1ba64b28d7b6d65f5bcf33ae92a502c5844e7e4c2dd85",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 283943,
         "status": 1,
         "language": "en",
         "authors": [
