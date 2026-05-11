@@ -20,14 +20,20 @@ import org.jsoup.Jsoup
 
 
 class Oppadrama : MainAPI() {
-    override var mainUrl = "http://45.11.57.125"
+    override var mainUrl = "http://45.11.57.199"
     override var name = "Oppadrama🧦"
     override val hasMainPage = true
     override var lang = "id"
-    override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
+    override val supportedTypes = setOf(TvType.AsianDrama, TvType.Movie, TvType.TvSeries)
 
     companion object {
         var context: android.content.Context? = null
+        private val requestHeaders = mapOf(
+            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language" to "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Cookie" to "user_is_human=true",
+            "User-Agent" to "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36",
+        )
         
         fun getStatus(t: String): ShowStatus {
             return when (t) {
@@ -52,17 +58,20 @@ class Oppadrama : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val url = "$mainUrl/${request.data}".plus("&page=$page")
-        val document = app.get(url).document
-        val items = document.select("div.listupd article.bs")
+        val document = app.get(url, referer = "$mainUrl/", headers = requestHeaders).document
+        val items = document.select(searchResultSelector)
                             .mapNotNull { it.toSearchResult() }
+                            .distinctBy { it.url }
         return newHomePageResponse(HomePageList(request.name, items), hasNext = items.isNotEmpty())
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-    val linkElement = this.selectFirst("a") ?: return null
+    val linkElement = if (tagName() == "a") this else this.selectFirst("a[href]") ?: return null
     val href = fixUrl(linkElement.attr("href"))
     val title = linkElement.attr("title").ifBlank {
-        this.selectFirst("div.tt")?.text()
+        this.selectFirst("div.tt, h2[itemprop=headline], h2, img[alt]")?.let {
+            it.attr("alt").ifBlank { it.text() }
+        }
     } ?: return null
     val poster = this.selectFirst("img")?.getImageAttr()?.let { fixUrlNull(it) }
 
@@ -80,9 +89,10 @@ class Oppadrama : MainAPI() {
 }
 
     override suspend fun search(query: String): List<SearchResponse> {
-    val document = app.get("$mainUrl/?s=$query", timeout = 50L).document
-    val results = document.select("div.listupd article.bs")
+    val document = app.get("$mainUrl/?s=$query", referer = "$mainUrl/", headers = requestHeaders, timeout = 50L).document
+    val results = document.select(searchResultSelector)
         .mapNotNull { it.toSearchResult() }
+        .distinctBy { it.url }
     return results
 }
 
@@ -95,7 +105,7 @@ class Oppadrama : MainAPI() {
     }
 }
     override suspend fun load(url: String): LoadResponse {
-    val document = app.get(url).document
+    val document = app.get(url, referer = "$mainUrl/", headers = requestHeaders).document
 
     
     val title = document.selectFirst("h1.entry-title")?.text()?.trim().orEmpty()
@@ -200,7 +210,7 @@ val episodes = episodeElements
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).document
+        val document = app.get(data, referer = "$mainUrl/", headers = requestHeaders).document
 
         document.selectFirst("div.player-embed iframe")
             ?.getIframeAttr()
@@ -260,4 +270,6 @@ val episodes = episodeElements
         val regex = Regex("(-\\d*x\\d*)").find(this)?.groupValues?.get(0) ?: return this
         return this.replace(regex, "")
     }
+
+    private val searchResultSelector = "div.listupd article.bs, article.bs, div.bsx > a[href], div.bsx a[href]"
 }
