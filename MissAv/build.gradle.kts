@@ -1,8 +1,8 @@
 version = 11
 
 cloudstream {
-    authors     = listOf("aldey84")
-    language    = "en"
+    authors     = listOf("Anomali")
+    language    = "id"
     description = "Best Japan AV porn site, free forever, high speed, no lag, over 100,000 videos, daily update, no ads while playing video."
 
     /**

@@ -1,8 +1,8 @@
 version = 9
 
 cloudstream {
-    authors     = listOf("aldey84")
-    language    = "en"
+    authors     = listOf("Anomali")
+    language    = "id"
     description = "Awas Jangan Coli Kawan"
 
     /**

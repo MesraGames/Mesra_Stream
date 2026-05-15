@@ -1,8 +1,8 @@
 version = 4
 
 cloudstream {
-    authors     = listOf("AmanHnB")
-    language    = "en"
+    authors     = listOf("Anomali")
+    language    = "id"
     description = "MangoPorn"
 
     /**
