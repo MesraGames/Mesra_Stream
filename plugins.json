@@ -367,10 +367,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://justilien.com&size=%size%",
-        "fileHash": "sha256-8b23f2225443e52457d662b5ee4b4afe3a61c4ecf136a3aef80cc7673942e66d",
+        "fileHash": "sha256-486ed02843c25b0d7568d73c15fc9500ea435f774840545b7478373de34c5ea3",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 34310,
+        "fileSize": 41624,
         "status": 1,
         "language": "id",
         "authors": [
@@ -389,10 +389,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://filmapik.singles&size=%size%",
-        "fileHash": "sha256-f8f19bb42a8931e3cfb95d6dfac2f3a2c7b5801f731b202e94830d1c21e7f45b",
+        "fileHash": "sha256-4ffbd53287b8c7d3531cc2c548636c865af6b586a1bf30009fd4db4caf0c4687",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 23985,
+        "fileSize": 24312,
         "status": 1,
         "language": "id",
         "authors": [
@@ -540,15 +540,15 @@
         "name": "Hidoristream"
     },
     {
-        "iconUrl": "https://raw.githubusercontent.com/phisher98/TVVVV/refs/heads/main/Icons/idlix.png",
-        "fileHash": "sha256-e0249205ffb544f2199d64c23cc909222a96b75c82cfb91525fb5a3e500932ce",
+        "iconUrl": "https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://idlixian.com&size=16",
+        "fileHash": "sha256-f4b090ee3bba144257940227d110a1e4dafe70603974ae684cfa4ee2c11a0224",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 52857,
+        "fileSize": 39387,
         "status": 1,
         "language": "id",
         "authors": [
-            "Phisher98"
+            "AdiManu"
         ],
         "tvTypes": [
             "TvSeries",
@@ -556,7 +556,7 @@
             "Anime",
             "AsianDrama"
         ],
-        "version": 10,
+        "version": 6,
         "internalName": "IdlixProvider",
         "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/IdlixProvider.cs3",
         "name": "IdlixProvider"
@@ -1210,28 +1210,6 @@
         "description": "SontolFilm",
         "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/SontolFilmProvider.cs3",
         "name": "SontolFilmProvider"
-    },
-    {
-        "iconUrl": "https://github.com/duro92/ExtCloud/blob/main/SoraAnime/Icon.png",
-        "fileHash": "sha256-a53c6b0422b1c44feadb53f531bb737d894049df1543e64327dc8e5e8ab36402",
-        "apiVersion": 1,
-        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 314328,
-        "status": 1,
-        "language": "en",
-        "authors": [
-            "Hexated",
-            "Sora"
-        ],
-        "tvTypes": [
-            "Anime",
-            "AnimeMovie"
-        ],
-        "version": 1,
-        "internalName": "SoraAnime",
-        "description": "Anime-only provider based on SoraStream sources",
-        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/SoraAnime.cs3",
-        "name": "SoraAnime"
     },
     {
         "iconUrl": "https://github.com/duro92/ExtCloud/blob/main/SoraStream/Icon.png",
