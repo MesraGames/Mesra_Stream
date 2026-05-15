@@ -590,7 +590,7 @@
         "status": 1,
         "language": "id",
         "authors": [
-            "aldey84"
+            "Anomali"
         ],
         "tvTypes": [
             "NSFW"
@@ -825,9 +825,9 @@
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
         "fileSize": 19068,
         "status": 1,
-        "language": "en",
+        "language": "id",
         "authors": [
-            "AmanHnB"
+            "Anomali"
         ],
         "tvTypes": [
             "NSFW"
@@ -910,9 +910,9 @@
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
         "fileSize": 17777,
         "status": 1,
-        "language": "en",
+        "language": "id",
         "authors": [
-            "aldey84"
+            "Anomali"
         ],
         "tvTypes": [
             "NSFW"
@@ -1075,6 +1075,30 @@
         "name": "NontonAnimeIDProvider"
     },
     {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=onetouchtv.xyz/&sz=%size%",
+        "jarFileSize": 166595,
+        "fileHash": "sha256-e3ee8e73f5df87d67cca13e2fddf01e876930db4bb2e8aa1e801ec880f6e1b34",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 37380,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "Phisher98"
+        ],
+        "tvTypes": [
+            "AsianDrama",
+            "TvSeries"
+        ],
+        "version": 1,
+        "internalName": "OneTouchTV",
+        "jarUrl": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/OneTouchTV.jar",
+        "description": "Asian Dramas",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/OneTouchTV.cs3",
+        "name": "OneTouchTV",
+        "jarHash": "sha256-677f1fa7c0f9524577f677b37be3b0b9b75703c9e932a9ac59f7d8903abba25b"
+    },
+    {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://anime.oploverz.ac&size=%size%",
         "fileHash": "sha256-10ab8128cb3c6c25210809d5eda2e284d3f028f1b8a59603e7056af0c2c63f39",
         "apiVersion": 1,
@@ -1188,9 +1212,9 @@
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
         "fileSize": 20010,
         "status": 1,
-        "language": "en",
+        "language": "id",
         "authors": [
-            "aldey84"
+            "Anomali"
         ],
         "tvTypes": [
             "NSFW"
@@ -1364,9 +1388,9 @@
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
         "fileSize": 16028,
         "status": 1,
-        "language": "en",
+        "language": "id",
         "authors": [
-            "aldey84"
+            "Anomali"
         ],
         "tvTypes": [
             "NSFW"
