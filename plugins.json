@@ -548,7 +548,7 @@
         "status": 1,
         "language": "id",
         "authors": [
-            "AdiManu"
+            "Hexated"
         ],
         "tvTypes": [
             "TvSeries",
@@ -580,6 +580,26 @@
         "description": "IndoMax21 \u2014 Streaming Anime, Donghua, Hentai, Porn, Movie and TV Series",
         "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/IndoMax21Provider.cs3",
         "name": "IndoMax21Provider"
+    },
+    {
+        "iconUrl": "https://missav.ws/missav/logo-square.png",
+        "fileHash": "sha256-7c85c08b533eaf1a11ddaa8fab45ca8006f38140fad7e89111b518e12e3eeda7",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 22166,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "aldey84"
+        ],
+        "tvTypes": [
+            "NSFW"
+        ],
+        "version": 10,
+        "internalName": "JavHey",
+        "description": "Best Japan AV porn site, free forever, high speed, no lag, over 100,000 videos, daily update, no ads while playing video.",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/JavHey.cs3",
+        "name": "JavHey"
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://tv2.kawanfilm21.co&size=%size%",
@@ -799,6 +819,26 @@
         "name": "LayarKacaProvider"
     },
     {
+        "iconUrl": "http://mangoporn.net/wp-content/uploads/2024/07/mangoporn.net_.png",
+        "fileHash": "sha256-2ecd7d90e02d21f925452d195f092881dd35a74134a0f3a3aef678c82461122d",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 19068,
+        "status": 1,
+        "language": "en",
+        "authors": [
+            "AmanHnB"
+        ],
+        "tvTypes": [
+            "NSFW"
+        ],
+        "version": 4,
+        "internalName": "Mangoporn",
+        "description": "MangoPorn",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Mangoporn.cs3",
+        "name": "Mangoporn"
+    },
+    {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://melolo.com&size=%size%",
         "fileHash": "sha256-75a32f4cbabc88613e0546c00b860878052499f08043c86ac59b020fcaae669f",
         "apiVersion": 1,
@@ -862,6 +902,26 @@
         "internalName": "Midasxxi",
         "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Midasxxi.cs3",
         "name": "Midasxxi"
+    },
+    {
+        "iconUrl": "https://missav.ws/missav/logo-square.png",
+        "fileHash": "sha256-42dd84d4ed52d9e7402109614b12d71b7fe397c919b78cdcfd64193cff5ba1d6",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 17777,
+        "status": 1,
+        "language": "en",
+        "authors": [
+            "aldey84"
+        ],
+        "tvTypes": [
+            "NSFW"
+        ],
+        "version": 11,
+        "internalName": "MissAv",
+        "description": "Best Japan AV porn site, free forever, high speed, no lag, over 100,000 videos, daily update, no ads while playing video.",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/MissAv.cs3",
+        "name": "MissAv"
     },
     {
         "iconUrl": "https://github.com/NivinCNC/CNCVerse-Cloud-Stream-Extension/raw/refs/heads/master/MovieBoxProvider/icon.png",
@@ -1122,6 +1182,46 @@
         "name": "Pmsm"
     },
     {
+        "iconUrl": "https://podjav.tv/wp-content/uploads/2025/02/favicon-podjav.ico",
+        "fileHash": "sha256-8ffa9aa5283ee2b75b3c8542b3871bd378e8619c9edbf7c2f5dce16150afe5b3",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 20010,
+        "status": 1,
+        "language": "en",
+        "authors": [
+            "aldey84"
+        ],
+        "tvTypes": [
+            "NSFW"
+        ],
+        "version": 9,
+        "internalName": "PODJAV",
+        "description": "Best Japan AV porn site, free forever, high speed, no lag, over 100,000 videos, daily update, no ads while playing video.",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/PODJAV.cs3",
+        "name": "PODJAV"
+    },
+    {
+        "iconUrl": "https://www.pornhub.com/favicon.ico",
+        "fileHash": "sha256-24b7245be5b3be1b4a97a8693fcd0799de5273f5c5f5a886fd45cff54747cd71",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 17314,
+        "status": 1,
+        "language": "en",
+        "authors": [
+            "aldey84"
+        ],
+        "tvTypes": [
+            "NSFW"
+        ],
+        "version": 10,
+        "internalName": "Pornhub",
+        "description": "Awas Jangan Coli Kawan",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Pornhub.cs3",
+        "name": "Pornhub"
+    },
+    {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://v3.pusatfilm21info.com&size=%size%",
         "fileHash": "sha256-ccfeaf3798222c07c5d5aca449982eea32092888336d3fb64594cac1a36b5f1b",
         "apiVersion": 1,
@@ -1256,6 +1356,26 @@
         "description": "Winbu",
         "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Winbu.cs3",
         "name": "Winbu"
+    },
+    {
+        "iconUrl": "https://static.xhpingcdn.com/xh-mobile/images/favicon/favicon-v2-512x512.png?v=1",
+        "fileHash": "sha256-49d2888fe5343994eb726fc21283891b5f841ba732a89cfe59c29b1cb17c7848",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 16028,
+        "status": 1,
+        "language": "en",
+        "authors": [
+            "aldey84"
+        ],
+        "tvTypes": [
+            "NSFW"
+        ],
+        "version": 9,
+        "internalName": "Xhamster",
+        "description": "Awas Jangan Coli Kawan",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Xhamster.cs3",
+        "name": "Xhamster"
     },
     {
         "iconUrl": "https://yflix.to/favicon.ico",
