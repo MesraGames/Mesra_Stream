@@ -1,45 +1,25 @@
-package com.idlix
+package com.hexated
 
-import com.lagradost.cloudstream3.Actor
-import com.lagradost.cloudstream3.Episode
-import com.lagradost.cloudstream3.ErrorLoadingException
-import com.lagradost.cloudstream3.HomePageResponse
+import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
-import com.lagradost.cloudstream3.MainAPI
-import com.lagradost.cloudstream3.MainPageRequest
-import com.lagradost.cloudstream3.Score
-import com.lagradost.cloudstream3.SearchQuality
-import com.lagradost.cloudstream3.SearchResponse
-import com.lagradost.cloudstream3.SearchResponseList
-import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.TvType
-import com.lagradost.cloudstream3.addDate
-import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.base64Decode
-import com.lagradost.cloudstream3.getQualityFromString
-import com.lagradost.cloudstream3.mainPageOf
-import com.lagradost.cloudstream3.newEpisode
-import com.lagradost.cloudstream3.newHomePageResponse
-import com.lagradost.cloudstream3.newMovieLoadResponse
-import com.lagradost.cloudstream3.newMovieSearchResponse
-import com.lagradost.cloudstream3.newSubtitleFile
-import com.lagradost.cloudstream3.newTvSeriesLoadResponse
-import com.lagradost.cloudstream3.newTvSeriesSearchResponse
-import com.lagradost.cloudstream3.toNewSearchResponseList
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
+import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.text.Normalizer
 
 class IdlixProvider : MainAPI() {
-    override var mainUrl = base64Decode("aHR0cHM6Ly96MS5pZGxpeGt1LmNvbQ==")
+    override var mainUrl = "https://idlixian.com"
     override var name = "Idlix📸"
     override val hasMainPage = true
     override var lang = "id"
@@ -66,7 +46,11 @@ class IdlixProvider : MainAPI() {
         request: MainPageRequest
     ): HomePageResponse {
         val url = if (request.data.contains("%d")) request.data.format(page) else request.data
-        val res = app.get(url, timeout = 10000L).parsedSafe<ApiResponse>() ?: return newHomePageResponse(request.name, emptyList())
+        val res =
+            app.get(url, timeout = 10000L).parsedSafe<ApiResponse>() ?: return newHomePageResponse(
+                request.name,
+                emptyList()
+            )
         val home = res.data.map { item ->
             val title = item.title ?: "UnKnown"
             val poster = item.posterPath?.let { "https://image.tmdb.org/t/p/w342$it" }
@@ -92,7 +76,7 @@ class IdlixProvider : MainAPI() {
         return newHomePageResponse(request.name, home)
     }
 
-    override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query,1)?.items
+    override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query, 1)?.items
 
     override suspend fun search(query: String, page: Int): SearchResponseList? {
         val url = "$mainUrl/api/search?q=$query&page=$page&limit=8"
@@ -145,7 +129,7 @@ class IdlixProvider : MainAPI() {
             ?.toIntOrNull()
 
         val tags = data.genres?.mapNotNull { it.name } ?: emptyList()
-        val logourl = "https://image.tmdb.org/t/p/w500"+data.logoPath
+        val logourl = "https://image.tmdb.org/t/p/w500" + data.logoPath
         val actors = data.cast?.map {
             Actor(it.name ?: "", it.profilePath?.let { p -> "https://image.tmdb.org/t/p/w185$p" })
         } ?: emptyList()
@@ -195,14 +179,16 @@ class IdlixProvider : MainAPI() {
         }
 
         return if (data.seasons != null) {
-            val episodes = mutableListOf<Episode>()
+            val episodes = mutableListOf<com.lagradost.cloudstream3.Episode>()
 
             data.firstSeason?.episodes?.forEach { ep ->
                 episodes.add(
-                    newEpisode( LoadData(
-                        id = ep.id ?: return@forEach,
-                        type = "episode"
-                    ).toJson()) {
+                    newEpisode(
+                        LoadData(
+                            id = ep.id ?: return@forEach,
+                            type = "episode"
+                        ).toJson()
+                    ) {
                         this.name = ep.name
                         this.season = data.firstSeason.seasonNumber
                         this.episode = ep.episodeNumber
@@ -229,10 +215,12 @@ class IdlixProvider : MainAPI() {
 
                 seasonData?.episodes?.forEach { ep ->
                     episodes.add(
-                        newEpisode( LoadData(
-                            id = ep.id ?: return@forEach,
-                            type = "episode"
-                        ).toJson()) {
+                        newEpisode(
+                            LoadData(
+                                id = ep.id ?: return@forEach,
+                                type = "episode"
+                            ).toJson()
+                        ) {
                             this.name = ep.name
                             this.season = seasonNum
                             this.episode = ep.episodeNumber
@@ -240,7 +228,8 @@ class IdlixProvider : MainAPI() {
                             this.runTime = ep.runtime
                             this.score = Score.from10(ep.voteAverage?.toString())
                             addDate(ep.airDate)
-                            this.posterUrl = ep.stillPath?.let { "https://image.tmdb.org/t/p/w300$it" }
+                            this.posterUrl =
+                                ep.stillPath?.let { "https://image.tmdb.org/t/p/w300$it" }
                         }
                     )
                 }
@@ -261,10 +250,12 @@ class IdlixProvider : MainAPI() {
                 this.recommendations = recommendations
             }
         } else {
-            newMovieLoadResponse(title, url, TvType.Movie,  LoadData(
-                id = data.id ?: "",
-                type = "movie"
-            ).toJson()) {
+            newMovieLoadResponse(
+                title, url, TvType.Movie, LoadData(
+                    id = data.id ?: "",
+                    type = "movie"
+                ).toJson()
+            ) {
                 this.posterUrl = poster
                 this.backgroundPosterUrl = backdrop
                 this.logoUrl = logourl
@@ -313,7 +304,16 @@ class IdlixProvider : MainAPI() {
         iframeResponse?.let { iframe ->
             iframe.url.takeIf { it.isNotBlank() }
                 ?.let { streamUrl ->
-                    generateM3u8(name, streamUrl, mainUrl).forEach(callback)
+                    callback.invoke(
+                        newExtractorLink(
+                            name,
+                            name,
+                            streamUrl,
+                            ExtractorLinkType.M3U8
+                        ) {
+                            this.referer = mainUrl
+                        }
+                    )
                 }
 
             iframe.subtitles.forEach { subtitle ->
@@ -327,59 +327,242 @@ class IdlixProvider : MainAPI() {
         }
         return true
     }
-}
 
-fun getSearchQuality(check: String?): SearchQuality? {
-    val s = check ?: return null
-    val u = Normalizer.normalize(s, Normalizer.Form.NFKC).lowercase()
-    val patterns = listOf(
-        Regex("\\b(4k|ds4k|uhd|2160p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.FourK,
+    private fun getSearchQuality(check: String?): SearchQuality? {
+        val s = check ?: return null
+        val u = Normalizer.normalize(s, Normalizer.Form.NFKC).lowercase()
+        val patterns = listOf(
+            Regex("\\b(4k|ds4k|uhd|2160p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.FourK,
 
-        // CAM / THEATRE SOURCES FIRST
-        Regex("\\b(hdts|hdcam|hdtc)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HdCam,
-        Regex("\\b(camrip|cam[- ]?rip)\\b", RegexOption.IGNORE_CASE) to SearchQuality.CamRip,
-        Regex("\\b(cam)\\b", RegexOption.IGNORE_CASE) to SearchQuality.Cam,
+            // CAM / THEATRE SOURCES FIRST
+            Regex("\\b(hdts|hdcam|hdtc)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HdCam,
+            Regex("\\b(camrip|cam[- ]?rip)\\b", RegexOption.IGNORE_CASE) to SearchQuality.CamRip,
+            Regex("\\b(cam)\\b", RegexOption.IGNORE_CASE) to SearchQuality.Cam,
 
-        // WEB / RIP
-        Regex("\\b(web[- ]?dl|webrip|webdl)\\b", RegexOption.IGNORE_CASE) to SearchQuality.WebRip,
+            // WEB / RIP
+            Regex(
+                "\\b(web[- ]?dl|webrip|webdl)\\b",
+                RegexOption.IGNORE_CASE
+            ) to SearchQuality.WebRip,
 
-        // BLURAY
-        Regex("\\b(bluray|bdrip|blu[- ]?ray)\\b", RegexOption.IGNORE_CASE) to SearchQuality.BlueRay,
+            // BLURAY
+            Regex(
+                "\\b(bluray|bdrip|blu[- ]?ray)\\b",
+                RegexOption.IGNORE_CASE
+            ) to SearchQuality.BlueRay,
 
-        // RESOLUTIONS
-        Regex("\\b(1440p|qhd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.BlueRay,
-        Regex("\\b(1080p|fullhd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HD,
-        Regex("\\b(720p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.SD,
+            // RESOLUTIONS
+            Regex("\\b(1440p|qhd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.BlueRay,
+            Regex("\\b(1080p|fullhd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HD,
+            Regex("\\b(720p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.SD,
 
-        // GENERIC HD LAST
-        Regex("\\b(hdrip|hdtv)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HD,
+            // GENERIC HD LAST
+            Regex("\\b(hdrip|hdtv)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HD,
 
-        Regex("\\b(dvd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.DVD,
-        Regex("\\b(hq)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HQ,
-        Regex("\\b(rip)\\b", RegexOption.IGNORE_CASE) to SearchQuality.CamRip
+            Regex("\\b(dvd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.DVD,
+            Regex("\\b(hq)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HQ,
+            Regex("\\b(rip)\\b", RegexOption.IGNORE_CASE) to SearchQuality.CamRip
+        )
+
+
+        for ((regex, quality) in patterns) if (regex.containsMatchIn(u)) return quality
+        return null
+    }
+
+
+    data class Res(
+        val claim: String,
+        val redeemUrl: String,
     )
 
+    data class Iframe(
+        val code: String,
+        val url: String,
+        val expiresAt: Long,
+        val subtitles: List<Subtitle>,
+        val videoId: String,
+    )
 
-    for ((regex, quality) in patterns) if (regex.containsMatchIn(u)) return quality
-    return null
+    data class Subtitle(
+        val lang: String,
+        val label: String,
+        val path: String,
+    )
+
+    data class ApiResponse(
+        val data: List<ApiItem> = emptyList(),
+        val pagination: Pagination? = null,
+        val meta: Meta? = null
+    )
+
+    data class ApiItem(
+        val id: String? = null,
+        val title: String? = null,
+        val slug: String? = null,
+
+        val posterPath: String? = null,
+        val backdropPath: String? = null,
+
+        val releaseDate: String? = null,
+        val firstAirDate: String? = null,
+
+        val voteAverage: String? = null,
+        val viewCount: Any? = null,
+
+        val quality: String? = null,
+        val country: String? = null,
+        val runtime: Int? = null,
+
+        val createdAt: String? = null,
+        val numberOfSeasons: Int? = null,
+        val numberOfEpisodes: Int? = null,
+
+        val contentType: String? = null,
+
+        val commentCount: Int? = null,
+
+        // optional extras (safe ignore)
+        val originalLanguage: String? = null,
+        val popularity: Any? = null,
+        val genres: List<APIGenre>? = null,
+        val hasVideo: Boolean? = null,
+        val isPublished: Boolean? = null
+    )
+
+    data class APIGenre(
+        val id: String? = null,
+        val name: String? = null,
+        val slug: String? = null
+    )
+
+    data class Pagination(
+        val page: Int? = null,
+        val limit: Int? = null,
+        val total: Int? = null,
+        val totalPages: Int? = null
+    )
+
+    data class Meta(
+        val genre: String? = null,
+        val country: String? = null,
+        val year: String? = null,
+        val network: String? = null,
+        val sort: String? = null
+    )
+
+    data class DetailResponse(
+        val id: String? = null,
+        val title: String? = null,
+        val slug: String? = null,
+        val imdbId: String? = null,
+        val tmdbId: String? = null,
+        val overview: String? = null,
+        val tagline: String? = null,
+
+        val posterPath: String? = null,
+        val backdropPath: String? = null,
+        val logoPath: String? = null,
+
+        val backdrops: List<String>? = null,
+
+        val releaseDate: String? = null,
+        val firstAirDate: String? = null,
+
+        val runtime: Int? = null,
+        val voteAverage: Any? = null,
+        val popularity: Any? = null,
+
+        val originalLanguage: String? = null,
+        val country: String? = null,
+        val status: String? = null,
+
+        val trailerUrl: String? = null,
+        val quality: String? = null,
+        val director: String? = null,
+
+        val genres: List<Genre>? = null,
+        val cast: List<Cast>? = null,
+
+        val seasons: List<Season>? = null, // TV only
+        val firstSeason: Season? = null,
+
+        val viewCount: Any? = null,
+        val isPublished: Boolean? = null
+    )
+
+    data class Genre(
+        val id: String? = null,
+        val name: String? = null,
+        val slug: String? = null
+    )
+
+    data class Cast(
+        val id: String? = null,
+        val name: String? = null,
+        val character: String? = null,
+        val profilePath: String? = null
+    )
+
+    data class Season(
+        val id: String? = null,
+        val seasonNumber: Int? = null,
+        val name: String? = null,
+        val posterPath: String? = null,
+        val episodes: List<Episode>? = null
+    )
+
+    data class Episode(
+        val id: String? = null,
+        val episodeNumber: Int? = null,
+        val name: String? = null,
+        val overview: String? = null,
+        val stillPath: String? = null,
+        val airDate: String? = null,
+        val runtime: Int? = null,
+        val voteAverage: Any? = null
+    )
+
+    data class SeasonWrapper(
+        val season: Season? = null
+    )
+
+    data class SearchApiResponse(
+        val results: List<SearchApiResult>,
+        val total: Long,
+    )
+
+    data class SearchApiResult(
+        val id: String,
+        val contentType: String,
+        val title: String,
+        val originalTitle: String,
+        val overview: String,
+        val genres: List<String>,
+        val originalLanguage: String,
+        val voteAverage: Double,
+        val viewCount: Long,
+        val popularity: Double,
+        val posterPath: String,
+        val backdropPath: String,
+        val slug: String,
+        val firstAirDate: String?,
+        val numberOfSeasons: Long?,
+        val releaseDate: String?,
+        val quality: String?,
+    )
+
+    data class ChallengeResponse(
+        val challenge: String,
+        val signature: String,
+        val difficulty: Int
+    )
+
+    data class SolveResponse(
+        val embedUrl: String? = null
+    )
+
+    data class LoadData(
+        val id: String,
+        val type: String // "movie" or "episode"
+    )
 }
-
-
-data class Res(
-    val claim: String,
-    val redeemUrl: String,
-)
-
-data class Iframe(
-    val code: String,
-    val url: String,
-    val expiresAt: Long,
-    val subtitles: List<Subtitle>,
-    val videoId: String,
-)
-
-data class Subtitle(
-    val lang: String,
-    val label: String,
-    val path: String,
-)
