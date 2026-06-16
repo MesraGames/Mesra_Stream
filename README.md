@@ -88,4 +88,4 @@ Dengan penuh rasa hormat dan apresiasi, kami mengucapkan **terima kasih sebesar-
 ## 🌟 Penutup
 > *"Terus berkarya dan berkembang — komunitas ini kuat karena kalian semua."*
 
-🚀 **Terima kasih telah menghadirkan hiburan tanpa batas!**
+🚀 **Terima kasih telah menghadirkan hiburan tanpa batas Kepada Semuanya!**
