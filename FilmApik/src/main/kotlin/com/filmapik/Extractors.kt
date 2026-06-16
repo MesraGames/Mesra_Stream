@@ -1,17 +1,12 @@
-package com.filmapik
+package com.sad25kag.filmapik
 
 import com.lagradost.api.Log
-import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.utils.newExtractorLink
-import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.utils.ExtractorApi
+import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.VidStack
-import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
-
-
+import com.lagradost.cloudstream3.utils.ExtractorApi
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 class Filmapikstrp2p : VidStack() {
     override var name = "Filmapikstrp2p"
@@ -31,27 +26,45 @@ class BuzzServer : ExtractorApi() {
         callback: (ExtractorLink) -> Unit
     ) {
         try {
-            val qualityText = app.get(url).documentLarge.selectFirst("div.max-w-2xl > span")?.text()
-            val quality = getQualityFromName(qualityText)
-            val response = app.get("$url/download", referer = url, allowRedirects = false)
-            val redirectUrl = response.headers["hx-redirect"] ?: ""
+            val cleanUrl = url.trim().trimEnd('/')
 
-            if (redirectUrl.isNotEmpty()) {
+            val qualityText = app.get(
+                cleanUrl,
+                referer = referer ?: mainUrl
+            ).documentLarge.selectFirst(
+                "div.max-w-2xl > span, span:matchesOwn((?i)\\d{3,4}p)"
+            )?.text()
+
+            val quality = qualityText
+                ?.replace(Regex("\\D"), "")
+                ?.toIntOrNull()
+                ?: 0
+
+            val response = app.get(
+                "$cleanUrl/download",
+                referer = cleanUrl,
+                allowRedirects = false
+            )
+
+            val redirectUrl = response.headers["hx-redirect"]
+                ?: response.headers["location"]
+                ?: ""
+
+            if (redirectUrl.isNotBlank()) {
                 callback.invoke(
                     newExtractorLink(
-                        "BuzzServer",
-                        "BuzzServer",
-                        redirectUrl,
+                        name,
+                        name,
+                        redirectUrl
                     ) {
                         this.quality = quality
                     }
                 )
             } else {
-                Log.w("BuzzServer", "No redirect URL found in headers.")
+                Log.w(name, "No redirect URL found in headers.")
             }
         } catch (e: Exception) {
-            Log.e("BuzzServer", "Exception occurred: ${e.message}")
+            Log.e(name, "Exception occurred: ${e.message}")
         }
     }
 }
-

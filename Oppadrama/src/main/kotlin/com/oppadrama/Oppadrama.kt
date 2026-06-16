@@ -20,7 +20,7 @@ import org.jsoup.Jsoup
 
 
 class Oppadrama : MainAPI() {
-    override var mainUrl = "http://45.11.57.199"
+    override var mainUrl = "http://45.11.57.192"
     override var name = "Oppadrama🧦"
     override val hasMainPage = true
     override var lang = "id"
@@ -34,7 +34,7 @@ class Oppadrama : MainAPI() {
             "Cookie" to "user_is_human=true",
             "User-Agent" to "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36",
         )
-        
+
         fun getStatus(t: String): ShowStatus {
             return when (t) {
                 "Completed" -> ShowStatus.Completed
@@ -42,7 +42,7 @@ class Oppadrama : MainAPI() {
                 else -> ShowStatus.Completed
             }
         }
-        
+
     }
 
     override val mainPage = mainPageOf(
@@ -53,6 +53,8 @@ class Oppadrama : MainAPI() {
         "series/?country%5B%5D=south-korea&status=&type=Movie&order=update" to "Film Korea",
         "series/?country%5B%5D=south-korea&status=&type=Drama&order=update" to "Series Korea",
         "series/?country%5B%5D=japan&type=Drama&order=update" to "Series Jepang",
+        "series/?country%5B%5D=china&type=Drama&order=update" to "Series China",
+        "series/?country%5B%5D=china&type=Movie&order=update" to "Film China",
         "series/?country%5B%5D=usa&type=Drama&order=update" to "Series Barat"
     )
 
@@ -107,23 +109,23 @@ class Oppadrama : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
     val document = app.get(url, referer = "$mainUrl/", headers = requestHeaders).document
 
-    
+
     val title = document.selectFirst("h1.entry-title")?.text()?.trim().orEmpty()
 
-    
+
     val poster = document.selectFirst("div.bigcontent img")?.getImageAttr()?.let { fixUrlNull(it) }
 
-    
+
     val description = document.select("div.entry-content p")
         .joinToString("\n") { it.text() }
         .trim()
 
- 
+
     val year = document.selectFirst("span:matchesOwn(Dirilis:)")?.ownText()
         ?.filter { it.isDigit() }?.take(4)?.toIntOrNull()
 
-    
-    
+
+
     val duration = document.selectFirst("div.spe span:contains(Durasi:)")?.ownText()?.let {
     val h = Regex("(\\d+)\\s*hr").find(it)?.groupValues?.get(1)?.toIntOrNull() ?: 0
     val m = Regex("(\\d+)\\s*min").find(it)?.groupValues?.get(1)?.toIntOrNull() ?: 0
@@ -155,11 +157,11 @@ class Oppadrama : MainAPI() {
         ?: ""
 )
 
-    
+
     val recommendations = document.select("div.listupd article.bs")
         .mapNotNull { it.toRecommendResult() }
 
-    
+
 val episodeElements = document.select("div.eplister ul li a")
 
 val episodes = episodeElements
@@ -203,7 +205,7 @@ val episodes = episodeElements
 }
 
 }
-       
+
         override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,

@@ -1,4 +1,4 @@
-package com.dutamovie
+package com.sad25kag.dutamovie
 
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi

@@ -1,4 +1,4 @@
-package com.dutamovie
+package com.sad25kag.dutamovie
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
@@ -13,97 +13,87 @@ import com.lagradost.cloudstream3.utils.httpsify
 import com.lagradost.cloudstream3.utils.loadExtractor
 import java.net.URI
 import java.net.URLEncoder
-import org.jsoup.Jsoup
-import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
 open class DutaMovie : MainAPI() {
     companion object {
         var context: android.content.Context? = null
     }
-    override var mainUrl = "https://duta.media"
+    override var mainUrl = "https://malcontentgames.com"
+    private var directUrl: String? = null
     override var name = "DutaMovie🎉"
     override val hasMainPage = true
+    override val hasQuickSearch = true
+    override val hasDownloadSupport = true
     override var lang = "id"
     override val supportedTypes =
             setOf(TvType.Movie, TvType.TvSeries, TvType.Anime, TvType.AsianDrama)
-    private val fallbackMainUrl = "https://www.seosaja.com"
-    private val rewriteHosts = setOf("simplycufflinks.com", "www.simplycufflinks.com")
-    private val allowedHosts = rewriteHosts + setOf("www.seosaja.com", "seosaja.com")
     
 
     override val mainPage =
             mainPageOf(
+                    "movie/page/%d/" to "Movie",
+                    "serial-tv/page/%d/" to "Serial TV",
+                    "animasi/page/%d/" to "Animasi",
                     "category/box-office/page/%d/" to "Box Office",
-                    "category/serial-tv/page/%d/" to "Serial TV",
-                    "category/animation/page/%d/" to "Animasi",
-                    "country/korea/page/%d/" to "Serial TV Korea",
-                    "country/indonesia/page/%d/" to "Serial TV Indonesia",
+                    "category/serial-tv/page/%d/" to "Serial TV Update",
+                    "category/animation/page/%d/" to "Animation Update",
+
+                    "action/page/%d/" to "Action",
+                    "adventure/page/%d/" to "Adventure",
+                    "comedy/page/%d/" to "Comedy",
+                    "crime/page/%d/" to "Crime",
+                    "drama/page/%d/" to "Drama",
+                    "fantasy/page/%d/" to "Fantasy",
+                    "horror/page/%d/" to "Horror",
+                    "mystery/page/%d/" to "Mystery",
+                    "romance/page/%d/" to "Romance",
+                    "science-fiction/page/%d/" to "Science Fiction",
+                    "thriller/page/%d/" to "Thriller",
+
+                    "country/indonesia/page/%d/" to "Indonesia",
+                    "country/korea/page/%d/" to "Korea",
+                    "country/japan/page/%d/" to "Japan",
+                    "country/china/page/%d/" to "China",
+                    "country/india/page/%d/" to "India",
+                    "country/thailand/page/%d/" to "Thailand",
+                    "country/philippines/page/%d/" to "Philippines",
+                    "country/usa/page/%d/" to "USA",
+                    "country/united-kingdom/page/%d/" to "United Kingdom",
+                    "country/canada/page/%d/" to "Canada",
+                    "country/australia/page/%d/" to "Australia",
+                    "country/hong-kong/page/%d/" to "Hong Kong",
+                    "country/ireland/page/%d/" to "Ireland",
+                    "country/new-zealand/page/%d/" to "New Zealand",
             )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        var document =
-                runCatching { app.get(pageUrl(request.data, page), referer = "$mainUrl/").document }
-                        .getOrNull()
-        var home = document?.toSearchResults().orEmpty()
-
-        if (home.isEmpty()) {
-            document =
-                    app.get(seosajaPageUrl(request.name, page), referer = "$fallbackMainUrl/")
-                            .document
-            home = document.toSearchResults()
-        }
-
-        val hasNext =
-                document!!
-                        .select(
-                                "link[rel=next], a.next.page-numbers, a.btn-next, a.page-numbers[href*='/page/${page + 1}/'], a[href*='/page/${page + 1}']"
-                        )
-                        .isNotEmpty()
-        return newHomePageResponse(request.name, home, hasNext = hasNext)
+        // Popup dinonaktifkan agar homepage provider tidak mengganggu navigasi.
+        // context?.let { StarPopupHelper.showStarPopupIfNeeded(it) }
+        val data = request.data.format(page)
+        val document = app.get("$mainUrl/$data").document
+        val home = document.select("article.item").mapNotNull { it.toSearchResult() }
+        return newHomePageResponse(request.name, home)
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-        val anchor =
-                selectFirst(
-                                "h3.poster-title a[href], h2.entry-title a[href], .content-thumbnail a[href], figure a[href][itemprop=url], a[href][itemprop=url]"
-                        )
-                        ?: return null
-        val title =
-                listOf(
-                                selectFirst("h3.poster-title")?.text(),
-                                selectFirst("h2.entry-title a[href]")?.text(),
-                                anchor.attr("title")
-                                        .substringAfter("Permalink ke:", anchor.attr("title"))
-                                        .substringAfter("Permalink to:", anchor.attr("title")),
-                                selectFirst("img[title]")?.attr("title"),
-                                selectFirst("img[alt]")?.attr("alt"),
-                                anchor.text(),
-                        )
-                        .firstOrNull { !it.isNullOrBlank() }
-                        ?.cleanTitle()
-                        ?: return null
-        val itemBaseUrl = if (selectFirst("h3.poster-title") != null) fallbackMainUrl else mainUrl
-        val href = normalizeUrl(anchor.attr("href"), itemBaseUrl)?.rewriteToMainHost() ?: return null
-        if (!href.isAllowedProviderUrl()) return null
-        val ratingText =
-                this.selectFirst("div.gmr-rating-item, span.rating")?.text()?.replace("★", "")?.trim()
-        val posterUrl =
-                fixUrlNull(this.selectFirst(".content-thumbnail img, picture img, a[href] img, img")?.getImageAttr())
-                        .fixImageQuality()
-                        ?.rewriteToMainHost()
+        val title = this.selectFirst("h2.entry-title > a")?.text()?.trim() ?: return null
+        val href = fixUrl(this.selectFirst("a")!!.attr("href"))
+        val ratingText = this.selectFirst("div.gmr-rating-item")?.ownText()?.trim()
+        val posterUrl = fixUrlNull(this.selectFirst("a > img")?.getImageAttr()).fixImageQuality()
         val quality =
-                this.select("div.gmr-qual, div.gmr-quality-item > a, span.label").text().trim().replace("-", "")
-        val isSeries =
-                href.contains("/tv/", true) ||
-                        href.contains("/eps/", true) ||
-                        selectFirst("div.gmr-numbeps > span, .gmr-posttype-item") != null ||
-                        text().contains("TV Show", true) ||
-                        Regex("""\bS\d+\s*E""", RegexOption.IGNORE_CASE).containsMatchIn(text())
-        return if (isSeries) {
-            newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
+                this.select("div.gmr-qual, div.gmr-quality-item > a").text().trim().replace("-", "")
+        return if (quality.isEmpty()) {
+            val episode =
+                    Regex("Episode\\s?([0-9]+)")
+                            .find(title)
+                            ?.groupValues
+                            ?.getOrNull(1)
+                            ?.toIntOrNull()
+                            ?: this.select("div.gmr-numbeps > span").text().toIntOrNull()
+            newAnimeSearchResponse(title, href, TvType.TvSeries) {
                 this.posterUrl = posterUrl
-                if (quality.isNotBlank()) addQuality(quality)
+                addSub(episode)
                 this.score = Score.from10(ratingText?.toDoubleOrNull())
             }
         } else {
@@ -115,25 +105,18 @@ open class DutaMovie : MainAPI() {
         }
     }
 
-    override suspend fun search(query: String): List<SearchResponse> {
-        val encoded = URLEncoder.encode(query.trim(), "UTF-8")
-        val results =
-                runCatching {
-                            app.get(
-                                            "${mainUrl}/?s=$encoded",
-                                            referer = "$mainUrl/",
-                                            timeout = 50L,
-                                    )
-                                    .document
-                                    .toSearchResults()
-                        }
-                        .getOrDefault(emptyList())
+    override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
-        return results.ifEmpty {
-            app.get("${fallbackMainUrl}/?s=$encoded", referer = "$fallbackMainUrl/", timeout = 50L)
-                    .document
-                    .toSearchResults()
-        }
+    override suspend fun search(query: String): List<SearchResponse> {
+        val keyword = query.trim()
+        if (keyword.isBlank()) return emptyList()
+
+        val encodedQuery = URLEncoder.encode(keyword, "UTF-8")
+        val document =
+                app.get("${mainUrl}?s=$encodedQuery&post_type[]=post&post_type[]=tv", timeout = 50L)
+                        .document
+        val results = document.select("article.item").mapNotNull { it.toSearchResult() }
+        return results.distinctBy { it.url }
     }
 
     private fun Element.toRecommendResult(): SearchResponse? {
@@ -148,7 +131,6 @@ open class DutaMovie : MainAPI() {
     val href = selectFirst("h2.entry-title > a")
         ?.attr("href")
         ?.trim()
-        ?.let { normalizeUrl(it, mainUrl)?.rewriteToMainHost() }
         ?: return null
 
     // Poster dari elemen img di content-thumbnail
@@ -163,26 +145,6 @@ open class DutaMovie : MainAPI() {
     }
 }
 
-    private fun Element.toSeosajaRelatedResult(): SearchResponse? {
-        val anchor = selectFirst("a[href]") ?: return null
-        val href = normalizeUrl(anchor.attr("href"), fallbackMainUrl)?.rewriteToMainHost() ?: return null
-        if (!href.isAllowedProviderUrl()) return null
-        val title =
-            listOf(
-                    selectFirst(".video-title")?.text(),
-                    selectFirst("img[title]")?.attr("title"),
-                    selectFirst("img[alt]")?.attr("alt"),
-                    anchor.text(),
-                )
-                .firstOrNull { !it.isNullOrBlank() }
-                ?.cleanTitle()
-                ?: return null
-        val poster = fixUrlNull(selectFirst("img")?.getImageAttr()).fixImageQuality()?.rewriteToMainHost()
-        return newMovieSearchResponse(title, href, TvType.Movie) {
-            this.posterUrl = poster
-        }
-    }
-
 
     override suspend fun load(url: String): LoadResponse {
     // Pakai Desktop User-Agent agar website tidak mengirim halaman mobile
@@ -195,63 +157,6 @@ open class DutaMovie : MainAPI() {
     val fetch = app.get(url, headers = desktopHeaders)
     val document = fetch.document
 
-    if (runCatching { URI(url).host.orEmpty() }.getOrDefault("").contains("seosaja", true)) {
-        val title = document.selectFirst("div.movie-info h1, h1")
-            ?.text()
-            ?.trim()
-            .orEmpty()
-
-        val poster =
-            fixUrlNull(
-                document.selectFirst("img.poster-baner, div.movie-info picture img, meta[property=og:image]")
-                    ?.getImageAttr()
-            )?.fixImageQuality()
-
-        val tags =
-            document.select("div.tag-list a[href*='/genre/']").map { it.text().trim() }
-                .filter { it.isNotBlank() }
-                .distinct()
-
-        val year = Regex("""(?:19|20)\d{2}""").find(title)?.value?.toIntOrNull()
-        val description = document.selectFirst("div.synopsis, meta[name=description]")
-            ?.let { it.attr("content").ifBlank { it.text() } }
-            ?.trim()
-
-        val rating =
-            document.selectFirst("div.info-tag strong")
-                ?.text()
-                ?.replace(Regex("""[^\d.]"""), "")
-                ?.trim()
-                ?.ifBlank { null }
-
-        val duration =
-            document.selectFirst("div.info-tag span:matchesOwn(\\d+\\s*m)")
-                ?.text()
-                ?.replace(Regex("\\D"), "")
-                ?.toIntOrNull()
-
-        val actors =
-            document.select("div.detail p:contains(Bintang Film) a")
-                .map { it.text().trim() }
-                .filter { it.isNotBlank() }
-
-        val recommendations =
-            document.select("div.related-content li, div.video-list-wrapper li")
-                .mapNotNull { it.toSeosajaRelatedResult() }
-                .distinctBy { it.url }
-
-        return newMovieLoadResponse(title, url, TvType.Movie, url) {
-            this.posterUrl = poster
-            this.year = year
-            this.plot = description
-            this.tags = tags
-            addScore(rating)
-            addActors(actors)
-            this.recommendations = recommendations
-            this.duration = duration ?: 0
-        }
-    }
-
     val title =
         document.selectFirst("h1.entry-title")
             ?.text()
@@ -263,7 +168,6 @@ open class DutaMovie : MainAPI() {
     val poster =
         fixUrlNull(document.selectFirst("figure.pull-left > img")?.getImageAttr())
             ?.fixImageQuality()
-            ?.rewriteToMainHost()
 
     val tags = document.select("strong:contains(Genre) ~ a").eachText()
 
@@ -310,7 +214,7 @@ open class DutaMovie : MainAPI() {
             addActors(actors)
             this.recommendations = recommendations
             this.duration = duration ?: 0
-            addTrailer(trailer, referer = mainUrl, addRaw = true)
+            addTrailer(trailer)
         }
     }
 
@@ -321,9 +225,7 @@ open class DutaMovie : MainAPI() {
 
     // Tombol “View All Episodes” → URL halaman series
     val seriesUrl =
-        document.selectFirst("a.button.button-shadow.active")?.attr("href")?.let {
-            normalizeUrl(it, mainUrl)?.rewriteToMainHost()
-        }
+        document.selectFirst("a.button.button-shadow.active")?.attr("href")
             ?: url.substringBefore("/eps/")
 
     val seriesDoc = app.get(seriesUrl, headers = desktopHeaders).document
@@ -335,7 +237,7 @@ open class DutaMovie : MainAPI() {
     var episodeCounter = 1
 
     val episodes = episodeElements.mapNotNull { eps ->
-        val href = (normalizeUrl(eps.attr("href"), mainUrl)?.rewriteToMainHost() ?: fixUrl(eps.attr("href"))).trim()
+        val href = fixUrl(eps.attr("href")).trim()
         val name = eps.text().trim()
 
         // Skip tombol "View All Episodes"
@@ -372,7 +274,7 @@ open class DutaMovie : MainAPI() {
         addActors(actors)
         this.recommendations = recommendations
         this.duration = duration ?: 0
-        addTrailer(trailer, referer = mainUrl, addRaw = true)
+        addTrailer(trailer)
     }
 }
 
@@ -384,161 +286,73 @@ open class DutaMovie : MainAPI() {
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit
 ): Boolean {
+    val baseUrl = getBaseUrl(data)
+    directUrl = baseUrl
+
     val document = app.get(data).document
-    var found = false
-
-    document.select("a[data-href], option[value], a[data-url]").forEach { link ->
-        val encoded =
-            listOf(link.attr("data-href"), link.attr("value"), link.attr("data-url"))
-                .firstOrNull { it.isNotBlank() }
-                ?: return@forEach
-        val streamUrl = encoded.decodeHexUrl() ?: encoded
-        if (streamUrl.isBlank()) return@forEach
-        found = true
-        loadExtractor(httpsify(streamUrl), data, subtitleCallback, callback)
-    }
-
-    if (found) return true
-
     val id = document.selectFirst("div#muvipro_player_content_id")?.attr("data-id")
+    var delivered = false
 
-    // 🎬 Ambil iframe player (streaming)
+    // 🎬 Ambil iframe player dari tab biasa
     if (id.isNullOrEmpty()) {
-        document.select("ul.muvipro-player-tabs li a").amap { ele ->
-            val tabUrl = normalizeUrl(ele.attr("href"), mainUrl)?.rewriteToMainHost() ?: fixUrl(ele.attr("href"))
+        for (ele in document.select("ul.muvipro-player-tabs li a[href]")) {
+            val tabUrl = fixUrl(ele.attr("href"))
             val iframe = app.get(tabUrl)
                 .document
-                .selectFirst("div.gmr-embed-responsive iframe")
+                .selectFirst("div.gmr-embed-responsive iframe, iframe")
                 ?.getIframeAttr()
                 ?.let { httpsify(it) }
-                ?: return@amap
+                ?: continue
 
-            loadExtractor(iframe, "$mainUrl/", subtitleCallback, callback)
+            val success = loadExtractor(iframe, "$baseUrl/", subtitleCallback, callback)
+            if (success) delivered = true
         }
     } else {
-        document.select("div.tab-content-ajax").amap { ele ->
+        // 🎬 Ambil iframe player dari AJAX muvipro
+        for (ele in document.select("div.tab-content-ajax[id]")) {
+            val tabId = ele.attr("id").trim()
+            if (tabId.isBlank()) continue
+
             val server = app.post(
-                "$mainUrl/wp-admin/admin-ajax.php",
-                referer = data,
+                "$baseUrl/wp-admin/admin-ajax.php",
                 data = mapOf(
                     "action" to "muvipro_player_content",
-                    "tab" to ele.attr("id"),
-                    "post_id" to "$id"
+                    "tab" to tabId,
+                    "post_id" to id
+                ),
+                headers = mapOf(
+                    "Referer" to data,
+                    "Origin" to baseUrl,
+                    "User-Agent" to USER_AGENT,
+                    "X-Requested-With" to "XMLHttpRequest"
                 )
             ).document
-                .select("iframe")
-                .attr("src")
-                .let { httpsify(it) }
+                .selectFirst("iframe")
+                ?.getIframeAttr()
+                ?.let { httpsify(it) }
+                ?: continue
 
-            loadExtractor(server, "$mainUrl/", subtitleCallback, callback)
+            val success = loadExtractor(server, "$baseUrl/", subtitleCallback, callback)
+            if (success) delivered = true
         }
     }
 
-document.select("ul.gmr-download-list li a").forEach { linkEl ->
-    val downloadUrl = linkEl.attr("href")
-    if (downloadUrl.isNotBlank()) {
-        loadExtractor(downloadUrl, data, subtitleCallback, callback)
-    }
-}
-
-    return true
-}
-
-
-    private fun Document.toSearchResults(): List<SearchResponse> {
-        return select(
-                        "main article:has(h3.poster-title), article.item, article.item-infinite, div.gmr-item-modulepost, div.gmr-module-posts > div[class*=col-]"
-                )
-                .mapNotNull { it.toSearchResult() }
-                .distinctBy { it.url }
-    }
-
-    private fun pageUrl(pattern: String, page: Int): String {
-        val path =
-                if (page <= 1) {
-                    pattern.replace("/page/%d/", "/")
-                        .replace("/page/%d", "")
-                        .replace("page/%d/", "")
-                        .replace("page/%d", "")
-                } else {
-                    pattern.format(page)
-                }
-        return normalizeUrl(path, mainUrl) ?: "$mainUrl/"
-    }
-
-    private fun seosajaPageUrl(section: String, page: Int): String {
-        val path =
-                when (section) {
-                    "Box Office" -> "genre/box-office/page/%d"
-                    "Serial TV" -> "genre/serial-tv/page/%d"
-                    "Animasi" -> "genre/animation/page/%d"
-                    "Serial TV Korea" -> "country/korea/page/%d"
-                    "Serial TV Indonesia" -> "country/indonesia/page/%d"
-                    else -> "genre/box-office/page/%d"
-                }
-        val fixedPath = if (page <= 1) path.replace("/page/%d", "") else path.format(page)
-        return normalizeUrl(fixedPath, fallbackMainUrl) ?: "$fallbackMainUrl/"
-    }
-
-    private fun normalizeUrl(raw: String, baseUrl: String): String? {
-        val clean =
-                Jsoup.parse(raw)
-                        .text()
-                        .trim()
-                        .replace("&amp;", "&")
-                        .takeIf {
-                            it.isNotBlank() &&
-                                    !it.startsWith("javascript:", true) &&
-                                    !it.startsWith("data:", true)
-                        }
-                        ?: return null
-
-        return when {
-            clean.startsWith("//") -> "https:$clean"
-            clean.startsWith("http://", true) || clean.startsWith("https://", true) -> clean
-            else -> {
-                val base = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
-                runCatching { URI(base).resolve(clean).toString() }.getOrNull()
-            }
+    // Fallback download links
+    document.select("ul.gmr-download-list li a[href], a[href*='/download/'], a[href*='/dl/']").forEach { linkEl ->
+        val downloadUrl = linkEl.attr("href").trim()
+        if (downloadUrl.isNotBlank()) {
+            val success = loadExtractor(fixUrl(downloadUrl), data, subtitleCallback, callback)
+            if (success) delivered = true
         }
     }
 
-    private fun String.isAllowedProviderUrl(): Boolean {
-        val host = runCatching { URI(this).host.orEmpty() }.getOrDefault("")
-        return host.equals(URI(mainUrl).host, true) || allowedHosts.any { host.equals(it, true) }
-    }
+    return delivered
+}
 
-    private fun String.rewriteToMainHost(): String {
-        val uri = runCatching { URI(this) }.getOrNull() ?: return this
-        val host = uri.host ?: return this
-        if (host.equals(URI(mainUrl).host, true) || rewriteHosts.none { host.equals(it, true) }) return this
-        return URI(
-                URI(mainUrl).scheme,
-                uri.userInfo,
-                URI(mainUrl).host,
-                uri.port,
-                uri.path,
-                uri.query,
-                uri.fragment,
-            )
-            .toString()
-    }
-
-    private fun String.cleanTitle(): String {
-        return Jsoup.parse(this)
-                .text()
-                .replace(Regex("""(?i)^Permalink\s+(?:ke|to):\s*"""), "")
-                .replace(Regex("""(?i)^Nonton\s+(?:Film|Movie|Series|Serial|Drama)\s+"""), "")
-                .replace(Regex("""(?i)\s+terbaru\s+di\s+Dutamovie21.*$"""), "")
-                .replace(Regex("""(?i)\s+(?:Sub\s*Indo|Subtitle\s*Indonesia)\b.*$"""), "")
-                .replace(Regex("""\s+"""), " ")
-                .trim()
-    }
 
 
     private fun Element.getImageAttr(): String {
         return when {
-            this.hasAttr("content") -> this.attr("abs:content")
             this.hasAttr("data-src") -> this.attr("abs:data-src")
             this.hasAttr("data-lazy-src") -> this.attr("abs:data-lazy-src")
             this.hasAttr("srcset") -> this.attr("abs:srcset").substringBefore(" ")
@@ -557,18 +371,9 @@ document.select("ul.gmr-download-list li a").forEach { linkEl ->
         return this.replace(regex, "")
     }
 
-    private fun String.decodeHexUrl(): String? {
-        val clean = trim()
-        if (!clean.matches(Regex("""[0-9a-fA-F]+""")) || clean.length % 2 != 0) return null
-        return runCatching {
-            clean.chunked(2)
-                .map { it.toInt(16).toByte() }
-                .toByteArray()
-                .toString(Charsets.UTF_8)
-        }.getOrNull()
-    }
-
     private fun getBaseUrl(url: String): String {
-        return URI(url).let { "${it.scheme}://${it.host}" }
+        return runCatching {
+            URI(url).let { "${it.scheme}://${it.host}" }
+        }.getOrDefault(mainUrl)
     }
 }

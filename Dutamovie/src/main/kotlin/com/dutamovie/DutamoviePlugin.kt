@@ -1,4 +1,4 @@
-package com.dutamovie
+package com.sad25kag.dutamovie
 
 import android.content.Context
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
