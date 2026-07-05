@@ -1,205 +1,26 @@
-package com.hidoristream
+package com.sad25kag.hidoristream
 
-import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.base64Decode
-import com.lagradost.cloudstream3.utils.ExtractorApi
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.USER_AGENT
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.newSubtitleFile
+import com.lagradost.cloudstream3.USER_AGENT
+import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidStack
-import java.net.URI
-import com.lagradost.api.Log
-import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.cloudstream3.utils.ExtractorApi
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
+import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.getAndUnpack
+import com.lagradost.cloudstream3.utils.getPacked
+import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.newExtractorLink
-import org.json.JSONObject
-import com.lagradost.cloudstream3.utils.HlsPlaylistParser
-import com.lagradost.cloudstream3.utils.INFER_TYPE
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.mozilla.javascript.Context
-import org.mozilla.javascript.Scriptable
-
-class HidoristreamPlayer : ExtractorApi() {
-    override val name = "Hidoristream"
-    override val mainUrl = "https://stream.hidoristream.my.id"
-    override val requiresReferer = true
-
-    override suspend fun getUrl(
-        url: String,
-        referer: String?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val embedUrl = normalizeEmbedUrl(url)
-        val headers = mapOf(
-            "User-Agent" to USER_AGENT,
-            "Accept" to "*/*",
-            "X-Requested-With" to "XMLHttpRequest",
-        )
-        val page = app.get(embedUrl, referer = referer ?: "$mainUrl/", headers = mapOf("User-Agent" to USER_AGENT)).text
-        val vars = extractPlayerVars(page) ?: return
-        val apiBase = vars.baseUrl.ifBlank { "$mainUrl/" }
-        val apiUrl = "${apiBase.trimEnd('/')}/api/?p=${vars.ps}"
-        val encryptedSources = app.post(
-            apiUrl,
-            referer = embedUrl,
-            headers = headers,
-            requestBody = vars.kaken.toRequestBody("text/plain".toMediaTypeOrNull()),
-        ).text
-
-        val cryptoJs = runCatching {
-            app.get("$mainUrl/assets/vendor/crypto-js/4.2.0/crypto-js.min.js", headers = mapOf("User-Agent" to USER_AGENT)).text
-        }.getOrNull() ?: return
-        val sourceJson = decryptPlayerResponse(encryptedSources, vars.pd, cryptoJs) ?: return
-        val sources = runCatching { JSONObject(sourceJson).optJSONArray("sources") }.getOrNull() ?: return
-
-        for (i in 0 until sources.length()) {
-            val item = sources.optJSONObject(i) ?: continue
-            val file = item.optString("file").trim().takeIf { it.isNotBlank() } ?: continue
-            val label = item.optString("label").trim().ifBlank { "Stream" }
-            callback(
-                newExtractorLink(
-                    source = name,
-                    name = "$name $label",
-                    url = file,
-                    type = INFER_TYPE,
-                ) {
-                    this.referer = embedUrl
-                    this.quality = getQualityFromName(label)
-                    this.headers = mapOf("Referer" to embedUrl, "User-Agent" to USER_AGENT)
-                }
-            )
-        }
-    }
-
-    private fun normalizeEmbedUrl(url: String): String {
-        return when {
-            url.startsWith("//") -> "https:$url"
-            url.startsWith("http", true) -> url
-            url.startsWith("/") -> "$mainUrl$url"
-            else -> "$mainUrl/$url"
-        }
-    }
-
-    private fun extractPlayerVars(html: String): PlayerVars? {
-        val script = Regex("""<script[^>]*>([\s\S]*?)</script>""", RegexOption.IGNORE_CASE)
-            .findAll(html)
-            .map { it.groupValues[1] }
-            .firstOrNull { it.length > 10_000 }
-            ?: return null
-
-        var result: PlayerVars? = null
-        val runner = Runnable {
-            val rhino = Context.enter()
-            rhino.optimizationLevel = -1
-            val scope = rhino.initSafeStandardObjects()
-            scope.put("window", scope, scope)
-            try {
-                rhino.evaluateString(scope, script, "HidoristreamPlayerVars", 1, null)
-                fun getVar(key: String): String {
-                    val value = scope.get(key, scope)
-                    return if (value == Scriptable.NOT_FOUND) "" else Context.toString(value)
-                }
-
-                val baseUrl = getVar("baseURL")
-                val apx = getVar("apx")
-                val kaken = getVar("kaken")
-                val ps = getVar("ps")
-                val pd = getVar("pd")
-                if (kaken.isNotBlank() && ps.isNotBlank() && pd.isNotBlank()) {
-                    result = PlayerVars(
-                        baseUrl = baseUrl,
-                        apiConfigBase = runCatching { base64Decode(apx.replace(',', '=')) }.getOrDefault(""),
-                        kaken = kaken,
-                        ps = ps,
-                        pd = pd,
-                    )
-                }
-            } catch (e: Exception) {
-                Log.e("HidoristreamPlayer", "Failed to decode player vars: ${e.message}")
-            } finally {
-                Context.exit()
-            }
-        }
-        val thread = Thread(ThreadGroup("HidoristreamPlayer"), runner, "thread_hidoristream_vars", 8 * 1024 * 1024)
-        thread.start()
-        thread.join()
-        thread.interrupt()
-        return result
-    }
-
-    private fun decryptPlayerResponse(encrypted: String, pd: String, cryptoJs: String): String? {
-        if (encrypted.trim().startsWith("{")) return encrypted
-
-        var result: String? = null
-        val runner = Runnable {
-            val rhino = Context.enter()
-            rhino.optimizationLevel = -1
-            val scope = rhino.initSafeStandardObjects()
-            scope.put("window", scope, scope)
-            scope.put("encryptedResponse", scope, encrypted)
-            scope.put("pd", scope, pd)
-            try {
-                rhino.evaluateString(scope, cryptoJs, "CryptoJS", 1, null)
-                rhino.evaluateString(scope, DCX_SCRIPT, "HidoristreamDcx", 1, null)
-                result = Context.toString(rhino.evaluateString(scope, "dcx(encryptedResponse);", "HidoristreamDecrypt", 1, null))
-            } catch (e: Exception) {
-                Log.e("HidoristreamPlayer", "Failed to decrypt player response: ${e.message}")
-            } finally {
-                Context.exit()
-            }
-        }
-        val thread = Thread(ThreadGroup("HidoristreamPlayer"), runner, "thread_hidoristream_decrypt", 8 * 1024 * 1024)
-        thread.start()
-        thread.join()
-        thread.interrupt()
-        return result
-    }
-
-    data class PlayerVars(
-        val baseUrl: String,
-        val apiConfigBase: String,
-        val kaken: String,
-        val ps: String,
-        val pd: String,
-    )
-
-    companion object {
-        private val DCX_SCRIPT = """
-            function dcx(text) {
-                try {
-                    if (text.indexOf("{") === 0) return text;
-                    var parsed = CryptoJS.enc.Base64.parse(text);
-                    var salt = CryptoJS.lib.WordArray.create(parsed.words.slice(0, 4));
-                    var ciphertext = CryptoJS.lib.WordArray.create(parsed.words.slice(4));
-                    var keyData = CryptoJS.PBKDF2(pd, salt, {
-                        keySize: 12,
-                        iterations: 10000,
-                        hasher: CryptoJS.algo.SHA512
-                    });
-                    var key = CryptoJS.lib.WordArray.create(keyData.words.slice(0, 8));
-                    var iv = CryptoJS.lib.WordArray.create(keyData.words.slice(8, 12));
-                    return CryptoJS.AES.decrypt(
-                        { ciphertext: ciphertext },
-                        key,
-                        {
-                            iv: iv,
-                            mode: CryptoJS.mode.CBC,
-                            padding: CryptoJS.pad.Pkcs7
-                        }
-                    ).toString(CryptoJS.enc.Utf8);
-                } catch (e) {
-                    return "";
-                }
-            }
-        """.trimIndent()
-    }
-}
+import org.json.JSONObject
+import java.net.URI
+import java.net.URLDecoder
 
 class Movearnpre : Dingtezuni() {
     override var name = "Movearnpre"
@@ -207,12 +28,12 @@ class Movearnpre : Dingtezuni() {
 }
 
 class Minochinos : Dingtezuni() {
-    override var name = "Earnvids"
+    override var name = "Minochinos"
     override var mainUrl = "https://minochinos.com"
 }
 
 class Mivalyo : Dingtezuni() {
-    override var name = "Earnvids"
+    override var name = "Mivalyo"
     override var mainUrl = "https://mivalyo.com"
 }
 
@@ -222,67 +43,105 @@ class Ryderjet : Dingtezuni() {
 }
 
 class Bingezove : Dingtezuni() {
-    override var name = "Earnvids"
+    override var name = "Bingezove"
     override var mainUrl = "https://bingezove.com"
 }
 
-open class Dingtezuni : ExtractorApi() {
-    override val name = "Earnvids"
-    override val mainUrl = "https://dingtezuni.com"
+open class Dingtezuni : EarnvidsLike() {
+    override var name = "Dingtezuni"
+    override var mainUrl = "https://dingtezuni.com"
+}
+
+open class Dintezuvio : EarnvidsLike() {
+    override var name = "Dintezuvio"
+    override var mainUrl = "https://dintezuvio.com"
+}
+
+open class EarnvidsLike : ExtractorApi() {
+    override var name = "Earnvids"
+    override var mainUrl = "https://dingtezuni.com"
     override val requiresReferer = true
 
- override suspend fun getUrl(
+    override suspend fun getUrl(
         url: String,
         referer: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
+        val embedUrl = getEmbedUrl(url)
+
         val headers = mapOf(
             "Sec-Fetch-Dest" to "empty",
             "Sec-Fetch-Mode" to "cors",
             "Sec-Fetch-Site" to "cross-site",
             "Origin" to mainUrl,
-	        "User-Agent" to USER_AGENT,
+            "User-Agent" to USER_AGENT
         )
-        
-        val response = app.get(getEmbedUrl(url), referer = referer)
-        val script = if (!getPacked(response.text).isNullOrEmpty()) {
-            var result = getAndUnpack(response.text)
-            if(result.contains("var links")){
-                result = result.substringAfter("var links")
-            }
-            result
-        } else {
-            response.document.selectFirst("script:containsData(sources:)")?.data()
-        } ?: return
 
-        // m3u8 urls could be prefixed by 'file:', 'hls2:' or 'hls4:', so we just match ':'
-        Regex(":\\s*\"(.*?m3u8.*?)\"").findAll(script).forEach { m3u8Match ->
-            generateM3u8(
-                name,
-                fixUrl(m3u8Match.groupValues[1]),
-                referer = "$mainUrl/",
+        val response = runCatching {
+            app.get(
+                embedUrl,
+                referer = referer ?: "$mainUrl/",
                 headers = headers
-            ).forEach(callback)
+            )
+        }.getOrNull() ?: return
+
+        val found = linkedSetOf<String>()
+        val html = response.text.cleanEscaped()
+
+        extractStreamUrls(html).forEach {
+            found.add(normalizeUrl(it, embedUrl))
+        }
+
+        val unpacked = runCatching {
+            if (!getPacked(html).isNullOrEmpty()) getAndUnpack(html) else null
+        }.getOrNull()
+
+        if (!unpacked.isNullOrBlank()) {
+            val script = if (unpacked.contains("var links")) {
+                unpacked.substringAfter("var links")
+            } else {
+                unpacked
+            }.cleanEscaped()
+
+            extractStreamUrls(script).forEach {
+                found.add(normalizeUrl(it, embedUrl))
+            }
+        }
+
+        response.document.selectFirst("script:containsData(sources:)")
+            ?.data()
+            ?.cleanEscaped()
+            ?.let { script ->
+                extractStreamUrls(script).forEach {
+                    found.add(normalizeUrl(it, embedUrl))
+                }
+            }
+
+        found.forEach { stream ->
+            emitExtractorVideo(name, stream, "$mainUrl/", headers, callback)
         }
     }
 
     private fun getEmbedUrl(url: String): String {
-		return when {
-			url.contains("/d/") -> url.replace("/d/", "/v/")
-			url.contains("/download/") -> url.replace("/download/", "/v/")
-			url.contains("/file/") -> url.replace("/file/", "/v/")
-			else -> url.replace("/f/", "/v/")
-		}
-	}
-
+        return when {
+            url.contains("/d/") -> url.replace("/d/", "/v/")
+            url.contains("/download/") -> url.replace("/download/", "/v/")
+            url.contains("/file/") -> url.replace("/file/", "/v/")
+            url.contains("/f/") -> url.replace("/f/", "/v/")
+            else -> url
+        }
+    }
 }
-
-
 
 class Hglink : StreamWishExtractor() {
     override val name = "Hglink"
     override val mainUrl = "https://hglink.to"
+}
+
+class Hgcloud : StreamWishExtractor() {
+    override val name = "Hgcloud"
+    override val mainUrl = "https://hgcloud.to"
 }
 
 class Ghbrisk : StreamWishExtractor() {
@@ -290,7 +149,7 @@ class Ghbrisk : StreamWishExtractor() {
     override val mainUrl = "https://ghbrisk.com"
 }
 
-class Dhcplay: StreamWishExtractor() {
+class Dhcplay : StreamWishExtractor() {
     override var name = "DHC Play"
     override var mainUrl = "https://dhcplay.com"
 }
@@ -304,12 +163,6 @@ class Streamcasthub : VidStack() {
 class Dm21embed : VidStack() {
     override var name = "Dm21embed"
     override var mainUrl = "https://dm21.embed4me.vip"
-    override var requiresReferer = true
-}
-
-class Serhmeplayer : VidStack() {
-    override var name = "Serhmeplayer"
-    override var mainUrl = "https://serh.4meplayer.online"
     override var requiresReferer = true
 }
 
@@ -337,56 +190,69 @@ class Meplayer : VidStack() {
     override var requiresReferer = true
 }
 
-open class Dintezuvio : ExtractorApi() {
-    override val name = "Earnvids"
-    override val mainUrl = "https://dintezuvio.com"
+class Serhmeplayer : VidStack() {
+    override var name = "Serhmeplayer"
+    override var mainUrl = "https://serh.4meplayer.online"
+    override var requiresReferer = true
+}
+
+class AbyssPlayer : ExtractorApi() {
+    override var name = "AbyssPlayer"
+    override var mainUrl = "https://abyssplayer.com"
     override val requiresReferer = true
 
- override suspend fun getUrl(
+    override suspend fun getUrl(
         url: String,
         referer: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
         val headers = mapOf(
-            "Sec-Fetch-Dest" to "empty",
-            "Sec-Fetch-Mode" to "cors",
-            "Sec-Fetch-Site" to "cross-site",
-            "Origin" to mainUrl,
-	        "User-Agent" to USER_AGENT,
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+            "Origin" to "https://playhydrax.com",
+            "Referer" to "https://playhydrax.com/"
         )
-        
-        val response = app.get(getEmbedUrl(url), referer = referer)
-        val script = if (!getPacked(response.text).isNullOrEmpty()) {
-            var result = getAndUnpack(response.text)
-            if(result.contains("var links")){
-                result = result.substringAfter("var links")
-            }
-            result
-        } else {
-            response.document.selectFirst("script:containsData(sources:)")?.data()
-        } ?: return
 
-        // m3u8 urls could be prefixed by 'file:', 'hls2:' or 'hls4:', so we just match ':'
-        Regex(":\\s*\"(.*?m3u8.*?)\"").findAll(script).forEach { m3u8Match ->
-            generateM3u8(
-                name,
-                fixUrl(m3u8Match.groupValues[1]),
-                referer = "$mainUrl/",
-                headers = headers
-            ).forEach(callback)
+        val document = runCatching {
+            app.get(url, headers = headers).document
+        }.getOrNull() ?: return
+
+        val scriptData = document.select("script").joinToString("\n") { it.data() }
+        val encrypted = Regex("""const\s+datas\s*=\s*["']([^"']+)["']""")
+            .find(scriptData)
+            ?.groupValues
+            ?.getOrNull(1)
+            ?: return
+
+        val response = runCatching {
+            app.post(
+                "https://enc-dec.app/api/dec-abyss",
+                headers = headers,
+                requestBody = """{"text":"$encrypted"}"""
+                    .toRequestBody("application/json".toMediaType())
+            ).text
+        }.getOrNull() ?: return
+
+        val root = runCatching { JSONObject(response) }.getOrNull() ?: return
+        val result = root.optJSONObject("result") ?: root
+        val sources = result.optJSONArray("sources") ?: return
+
+        for (i in 0 until sources.length()) {
+            val source = sources.optJSONObject(i) ?: continue
+            if (!source.optBoolean("status", true)) continue
+
+            val sourceUrl = source.optString("url").trim().cleanEscaped()
+            if (sourceUrl.isBlank()) continue
+
+            emitExtractorVideo(
+                extractorName = name,
+                link = sourceUrl,
+                referer = "https://playhydrax.com/",
+                headers = headers,
+                callback = callback
+            )
         }
     }
-
-    private fun getEmbedUrl(url: String): String {
-		return when {
-			url.contains("/d/") -> url.replace("/d/", "/v/")
-			url.contains("/download/") -> url.replace("/download/", "/v/")
-			url.contains("/file/") -> url.replace("/file/", "/v/")
-			else -> url.replace("/f/", "/v/")
-		}
-	}
-
 }
 
 class Veev : ExtractorApi() {
@@ -394,12 +260,10 @@ class Veev : ExtractorApi() {
     override val mainUrl = "https://veev.to"
     override val requiresReferer = false
 
-    private val pattern =
-        Regex("""(?://|\.)(?:veev|kinoger|poophq|doods)\.(?:to|pw|com)/[ed]/([0-9A-Za-z]+)""")
+    private val pattern = Regex("""(?://|\.)(?:veev|kinoger|poophq|doods)\.(?:to|pw|com)/[ed]/([0-9A-Za-z]+)""")
 
     companion object {
-        const val DEFAULT_UA =
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0"
+        const val DEFAULT_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0"
     }
 
     override suspend fun getUrl(
@@ -408,67 +272,71 @@ class Veev : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val mediaId = pattern.find(url)?.groupValues?.get(1)
-            ?: return
+        val mediaId = pattern.find(url)?.groupValues?.getOrNull(1) ?: return
         val pageUrl = "$mainUrl/e/$mediaId"
-        val html = app.get(
-            pageUrl,
-            headers = mapOf("User-Agent" to DEFAULT_UA)
-        ).text
+
+        val html = runCatching {
+            app.get(
+                pageUrl,
+                headers = mapOf("User-Agent" to DEFAULT_UA)
+            ).text
+        }.getOrNull() ?: return
 
         val encRegex = Regex("""[.\s'](?:fc|_vvto\[[^]]*)(?:['\]]*)?\s*[:=]\s*['"]([^'"]+)""")
         val foundValues = encRegex.findAll(html).map { it.groupValues[1] }.toList()
 
-        if (foundValues.isEmpty()) return
-
         for (f in foundValues.reversed()) {
-            val ch = veevDecode(f)
+            val ch = runCatching { veevDecode(f) }.getOrNull() ?: continue
             if (ch == f) continue
 
             val dlUrl = "$mainUrl/dl?op=player_api&cmd=gi&file_code=$mediaId&r=$mainUrl&ch=$ch&ie=1"
-            val responseText = app.get(dlUrl, headers = mapOf("User-Agent" to DEFAULT_UA)).text
 
-            val json = try {
+            val responseText = runCatching {
+                app.get(
+                    dlUrl,
+                    headers = mapOf("User-Agent" to DEFAULT_UA)
+                ).text
+            }.getOrNull() ?: continue
+
+            val json = runCatching {
                 JSONObject(responseText)
-            } catch (_: Exception) {
-                continue
-            }
-            val file = json.optJSONObject("file") ?: continue
+            }.getOrNull() ?: continue
 
+            val file = json.optJSONObject("file") ?: continue
             if (file.optString("file_status") != "OK") continue
 
-            val dv = file.getJSONArray("dv").getJSONObject(0).getString("s")
-            val decoded = decodeUrl(veevDecode(dv), buildArray(ch)[0])
+            val dv = file.optJSONArray("dv")?.optJSONObject(0)?.optString("s") ?: continue
+            val rules = buildArray(ch).firstOrNull() ?: emptyList()
 
-            val fileMimeType = file.optString("file_mime_type", "")
+            val decoded = runCatching {
+                decodeUrl(veevDecode(dv), rules)
+            }.getOrNull() ?: continue
 
             callback.invoke(
                 newExtractorLink(
-                    name,
-                    name,
-                    decoded,
-                    INFER_TYPE
-                )
-                {
+                    source = name,
+                    name = name,
+                    url = decoded,
+                    type = if (decoded.contains(".m3u8", true)) {
+                        ExtractorLinkType.M3U8
+                    } else {
+                        ExtractorLinkType.VIDEO
+                    }
+                ) {
                     this.referer = mainUrl
-                    this.quality = Qualities.Unknown.value
+                    this.quality = getQualityFromName(decoded).takeIf {
+                        it != Qualities.Unknown.value
+                    } ?: Qualities.Unknown.value
                 }
             )
+
             return
         }
     }
 
-    fun String.toExoPlayerMimeType(): String {
-        return when (this.lowercase()) {
-            "video/x-matroska", "video/webm" -> HlsPlaylistParser.MimeTypes.VIDEO_MATROSKA
-            "video/mp4" -> HlsPlaylistParser.MimeTypes.VIDEO_MP4
-            "application/x-mpegurl", "application/vnd.apple.mpegurl" -> HlsPlaylistParser.MimeTypes.APPLICATION_M3U8
-            "video/avi" -> HlsPlaylistParser.MimeTypes.VIDEO_AVI
-            else -> ""
-        }
-    }
-
     private fun veevDecode(etext: String): String {
+        if (etext.isEmpty()) return etext
+
         val result = StringBuilder()
         val lut = HashMap<Int, String>()
         var n = 256
@@ -482,6 +350,7 @@ class Veev : ExtractorApi() {
             lut[n++] = c + nc[0]
             c = nc
         }
+
         return result.toString()
     }
 
@@ -489,34 +358,135 @@ class Veev : ExtractorApi() {
 
     private fun buildArray(encoded: String): List<List<Int>> {
         val result = mutableListOf<List<Int>>()
-        val it = encoded.iterator()
-        fun nextIntOrZero(): Int = if (it.hasNext()) jsInt(it.nextChar()) else 0
+        val iterator = encoded.iterator()
+
+        fun nextIntOrZero(): Int {
+            return if (iterator.hasNext()) jsInt(iterator.nextChar()) else 0
+        }
+
         var count = nextIntOrZero()
+
         while (count != 0) {
             val row = mutableListOf<Int>()
+
             repeat(count) {
                 row.add(nextIntOrZero())
             }
+
             result.add(row.reversed())
             count = nextIntOrZero()
         }
+
         return result
     }
 
-
     private fun decodeUrl(encoded: String, rules: List<Int>): String {
         var text = encoded
-        for (r in rules) {
-            if (r == 1) text = text.reversed()
-            val arr = text.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-            text = arr.toString(Charsets.UTF_8).replace("dXRmOA==", "")
+
+        for (rule in rules) {
+            if (rule == 1) text = text.reversed()
+
+            val arr = text.chunked(2)
+                .mapNotNull { it.toIntOrNull(16)?.toByte() }
+                .toByteArray()
+
+            text = arr.toString(Charsets.UTF_8)
+                .replace("dXRmOA==", "")
         }
+
         return text
     }
 }
 
-class BuzzServer : ExtractorApi() {
-    override val name = "BuzzServer"
+class HidoriStream : ExtractorApi() {
+    override val name = "HidoriStream"
+    override val mainUrl = "https://stream.hidoristream.my.id"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val sources = linkedSetOf<String>()
+
+        if (isLikelyMediaUrl(url)) {
+            sources.add(url)
+        } else {
+            val response = runCatching {
+                app.get(
+                    url,
+                    referer = referer ?: "https://v8.hidoristream.online/",
+                    headers = mapOf("User-Agent" to USER_AGENT)
+                )
+            }.getOrNull() ?: return
+
+            val html = response.text.cleanEscaped()
+
+            extractStreamUrls(html).forEach { sources.add(normalizeUrl(it, url)) }
+
+            response.document.select("iframe[src], source[src], video[src], a[href*='.m3u8'], a[href*='.mp4'], a[href*='/stream-vid/']")
+                .forEach { element ->
+                    val raw = element.attr("src").ifBlank { element.attr("href") }.trim()
+                    if (raw.isNotBlank()) sources.add(normalizeUrl(raw, url))
+                }
+        }
+
+        sources.forEach { link ->
+            emitExtractorVideo(
+                extractorName = name,
+                link = link,
+                referer = referer ?: "https://v8.hidoristream.online/",
+                headers = mapOf("User-Agent" to USER_AGENT),
+                callback = callback
+            )
+        }
+    }
+}
+
+class Terabox : ExtractorApi() {
+    override val name = "Terabox"
+    override val mainUrl = "https://1024terabox.com"
+    override val requiresReferer = true
+
+    override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val response = runCatching {
+            app.get(url, referer = referer).text.cleanEscaped()
+        }.getOrNull() ?: return
+
+        val videoUrl = Regex(
+            """<source[^>]+src=["'](https?://[^"']+\.(?:mp4|m3u8)[^"']*)["']""",
+            RegexOption.IGNORE_CASE
+        ).find(response)
+            ?.groupValues
+            ?.getOrNull(1)
+            ?: Regex(
+                """(https?://[^\s"',]+?\.(?:mp4|m3u8)[^\s"',]*)""",
+                RegexOption.IGNORE_CASE
+            ).find(response)
+                ?.groupValues
+                ?.getOrNull(1)
+                ?.replace("\\/", "/")
+            ?: Regex(""""browserDownloadUrl"\s*:\s*"([^"]+)"""")
+                .find(response)
+                ?.groupValues
+                ?.getOrNull(1)
+                ?.replace("\\/", "/")
+
+        videoUrl?.let { link ->
+            emitExtractorVideo(name, link, mainUrl, mapOf("User-Agent" to USER_AGENT), callback)
+        }
+    }
+}
+
+class Buzzheavier : ExtractorApi() {
+    override val name = "Buzzheavier"
     override val mainUrl = "https://buzzheavier.com"
     override val requiresReferer = true
 
@@ -526,27 +496,156 @@ class BuzzServer : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        try {
-            val qualityText = app.get(url).documentLarge.selectFirst("div.max-w-2xl > span")?.text()
-            val quality = getQualityFromName(qualityText)
-            val response = app.get("$url/download", referer = url, allowRedirects = false)
-            val redirectUrl = response.headers["hx-redirect"] ?: ""
+        val document = runCatching {
+            app.get(url, referer = referer).document
+        }.getOrNull() ?: return
 
-            if (redirectUrl.isNotEmpty()) {
-                callback.invoke(
-                    newExtractorLink(
-                        "BuzzServer",
-                        "BuzzServer",
-                        redirectUrl,
-                    ) {
-                        this.quality = quality
-                    }
-                )
-            } else {
-                Log.w("BuzzServer", "No redirect URL found in headers.")
+        val videoUrl = document.selectFirst("video source[src], source[src], video[src]")
+            ?.attr("src")
+            ?.takeIf { it.isNotBlank() }
+            ?: document.selectFirst("a[href$=.mp4], a[href$=.mkv], a[href$=.m3u8]")
+                ?.attr("href")
+                ?.takeIf { it.isNotBlank() }
+            ?: Regex("""file\s*:\s*["'](https?://[^"']+)["']""")
+                .find(document.html())
+                ?.groupValues
+                ?.getOrNull(1)
+
+        videoUrl?.let { raw ->
+            val link = when {
+                raw.startsWith("http", true) -> raw
+                raw.startsWith("//") -> "https:$raw"
+                raw.startsWith("/") -> "$mainUrl$raw"
+                else -> "$mainUrl/$raw"
             }
-        } catch (e: Exception) {
-            Log.e("BuzzServer", "Exception occurred: ${e.message}")
+
+            emitExtractorVideo(name, link, mainUrl, mapOf("User-Agent" to USER_AGENT), callback)
         }
     }
+}
+
+data class FileSource(
+    @JsonProperty("file") val file: String? = null,
+    @JsonProperty("label") val label: String? = null
+)
+
+private suspend fun emitExtractorVideo(
+    extractorName: String,
+    link: String,
+    referer: String,
+    headers: Map<String, String>,
+    callback: (ExtractorLink) -> Unit
+) {
+    if (link.contains(".m3u8", true)) {
+        generateM3u8(
+            source = extractorName,
+            streamUrl = link,
+            referer = referer,
+            headers = headers
+        ).forEach(callback)
+    } else {
+        callback.invoke(
+            newExtractorLink(
+                source = extractorName,
+                name = extractorName,
+                url = link,
+                type = ExtractorLinkType.VIDEO
+            ) {
+                this.referer = referer
+                this.quality = getQualityFromName(link).takeIf {
+                    it != Qualities.Unknown.value
+                } ?: qualityFromUrl(link)
+            }
+        )
+    }
+}
+
+private fun extractStreamUrls(text: String): List<String> {
+    val urls = linkedSetOf<String>()
+
+    Regex("""https?://[^"'\\\s<>]+?\.(?:m3u8|mp4)(?:\?[^"'\\\s<>]*)?""", RegexOption.IGNORE_CASE)
+        .findAll(text)
+        .map { it.value.cleanEscaped() }
+        .forEach { urls.add(it) }
+
+    Regex("""["']([^"']+\.(?:m3u8|mp4)[^"']*)["']""", RegexOption.IGNORE_CASE)
+        .findAll(text)
+        .mapNotNull { it.groupValues.getOrNull(1) }
+        .map { it.cleanEscaped() }
+        .forEach { urls.add(it) }
+
+    Regex(""":\s*["']([^"']*(?:m3u8|mp4)[^"']*)["']""", RegexOption.IGNORE_CASE)
+        .findAll(text)
+        .mapNotNull { it.groupValues.getOrNull(1) }
+        .map { it.cleanEscaped() }
+        .forEach { urls.add(it) }
+
+    Regex("""https?%3A%2F%2F[^"'\\\s<>]+?\.(?:m3u8|mp4)[^"'\\\s<>]*""", RegexOption.IGNORE_CASE)
+        .findAll(text)
+        .map {
+            runCatching {
+                URLDecoder.decode(it.value, "UTF-8")
+            }.getOrDefault(it.value)
+        }
+        .map { it.cleanEscaped() }
+        .forEach { urls.add(it) }
+
+    Regex("""https?://[^"'\\\s<>]+/(?:stream-vid|media/files)/[^"'\\\s<>]+""", RegexOption.IGNORE_CASE)
+        .findAll(text)
+        .map { it.value.cleanEscaped() }
+        .forEach { urls.add(it) }
+
+    return urls.toList()
+}
+
+private fun normalizeUrl(
+    url: String,
+    baseUrl: String
+): String {
+    val clean = url.cleanEscaped()
+
+    return when {
+        clean.startsWith("http", true) -> clean
+        clean.startsWith("//") -> "https:$clean"
+        clean.startsWith("/") -> {
+            val origin = Regex("""^https?://[^/]+""")
+                .find(baseUrl)
+                ?.value
+                ?: ""
+            "$origin$clean"
+        }
+        else -> runCatching {
+            URI(baseUrl).resolve(clean).toString()
+        }.getOrDefault(clean)
+    }
+}
+
+private fun isLikelyMediaUrl(url: String): Boolean {
+    val value = url.lowercase()
+    return value.contains(".m3u8") ||
+        value.contains(".mp4") ||
+        value.contains("/stream-vid/") ||
+        value.contains("/media/files/") ||
+        value.contains("stotagehidori.my.id") ||
+        value.contains("ayokunjungi.hidoristream")
+}
+
+private fun qualityFromUrl(url: String): Int {
+    return when {
+        url.contains("2160", true) || url.contains("4k", true) -> Qualities.P2160.value
+        url.contains("1080", true) -> Qualities.P1080.value
+        url.contains("720", true) -> Qualities.P720.value
+        url.contains("480", true) -> Qualities.P480.value
+        url.contains("360", true) -> Qualities.P360.value
+        else -> Qualities.Unknown.value
+    }
+}
+
+private fun String.cleanEscaped(): String {
+    return this
+        .replace("\\/", "/")
+        .replace("\\u0026", "&")
+        .replace("&amp;", "&")
+        .replace("&#038;", "&")
+        .trim()
 }

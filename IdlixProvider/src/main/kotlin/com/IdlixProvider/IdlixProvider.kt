@@ -1,14 +1,47 @@
-package com.IdlixProvider
+package com.sad25kag.idlix
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.api.Log
-import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.Actor
+import com.lagradost.cloudstream3.Episode
+import com.lagradost.cloudstream3.ErrorLoadingException
+import com.lagradost.cloudstream3.HomePageResponse
+import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
+import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.MainAPI
+import com.lagradost.cloudstream3.MainPageRequest
+import com.lagradost.cloudstream3.Score
+import com.lagradost.cloudstream3.SearchQuality
+import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.SearchResponseList
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.addDate
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.base64Decode
+import com.lagradost.cloudstream3.getQualityFromString
+import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.newEpisode
+import com.lagradost.cloudstream3.newHomePageResponse
+import com.lagradost.cloudstream3.newMovieLoadResponse
+import com.lagradost.cloudstream3.newMovieSearchResponse
+import com.lagradost.cloudstream3.newSubtitleFile
+import com.lagradost.cloudstream3.newTvSeriesLoadResponse
+import com.lagradost.cloudstream3.newTvSeriesSearchResponse
+import com.lagradost.cloudstream3.toNewSearchResponseList
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
+import kotlinx.coroutines.delay
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.text.Normalizer
 
 class IdlixProvider : MainAPI() {
-    override var mainUrl = "https://z1.idlixku.com"
+    override var mainUrl = base64Decode("aHR0cHM6Ly96Mi5pZGxpeGt1LmNvbQ==")
     override var name = "Idlix📸"
     override val hasMainPage = true
     override var lang = "id"
@@ -21,272 +54,292 @@ class IdlixProvider : MainAPI() {
     )
 
     override val mainPage = mainPageOf(
-        "$mainUrl/api/homepage" to "Beranda",
-        "$mainUrl/api/browse?page=1&limit=36&sort=latest&network=netflix" to "Netflix",
-        "$mainUrl/api/browse?page=1&limit=36&sort=latest&network=prime-video" to "Prime Video",
-        "$mainUrl/api/browse?page=1&limit=36&sort=latest&network=hbo" to "HBO",
-        "$mainUrl/api/browse?page=1&limit=36&sort=latest&network=disney-plus" to "Disney+",
-        "$mainUrl/api/browse?page=1&limit=36&sort=latest&network=apple-tv-plus" to "Apple TV+",
-        "$mainUrl/api/movies?page=1&limit=36&sort=createdAt" to "Movie",
-        "$mainUrl/api/series?page=1&limit=36&sort=createdAt" to "Series",
-        "$mainUrl/api/browse?page=1&limit=36&sort=latest&genre=horror" to "Horror",
-        "$mainUrl/api/browse?page=1&limit=36&sort=latest&genre=drama" to "Drama",
-        "$mainUrl/api/browse?page=1&limit=36&sort=latest&genre=mystery" to "Mystery",
-        "$mainUrl/api/browse?page=1&limit=36&sort=latest&genre=thriller" to "Thriller"
+        "$mainUrl/api/movies?page=%d&limit=36&sort=createdAt" to "Film Terbaru",
+        "$mainUrl/api/series?page=%d&limit=36&sort=createdAt" to "Serial TV Terbaru",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest" to "Update Terbaru",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=popular" to "Populer",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=rating" to "Papan Peringkat",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=action" to "Action",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=adventure" to "Adventure",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=animation" to "Animation",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=comedy" to "Comedy",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=crime" to "Crime",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=documentary" to "Documentary",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=drama" to "Drama",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=family" to "Family",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=fantasy" to "Fantasy",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=history" to "History",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=horror" to "Horror",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=kids" to "Kids",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=music" to "Music",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=mystery" to "Mystery",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=reality" to "Reality",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=romance" to "Romance",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=science-fiction" to "Science Fiction",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=soap" to "Soap",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=talk" to "Talk",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=thriller" to "Thriller",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=tv-movie" to "TV Movie",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=war" to "War",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&genre=western" to "Western",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&year=2026" to "2026",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&year=2025" to "2025",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&year=2024" to "2024",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&year=2023" to "2023",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&year=2022" to "2022",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&year=2021" to "2021",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&year=2020" to "2020",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&network=netflix" to "Netflix",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&network=hbo" to "HBO",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&network=prime-video" to "Prime Video",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&network=disney-plus" to "Disney+",
+        "$mainUrl/api/browse?page=%d&limit=36&sort=latest&network=apple-tv-plus" to "Apple TV+",
     )
-
-    private fun formatTitle(title: String, season: Int?): String {
-        return if (season != null && season > 0) "$title (S$season)" else title
-    }
 
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        val url = request.data
-
-        if (url.contains("/api/homepage")) {
-            if (page > 1) return newHomePageResponse(request.name, emptyList(), hasNext = false)
-
-            val responseText = app.get(url).text
-            val homeItems = mutableListOf<SearchResponse>()
-
-            try {
-                val parsed = AppUtils.parseJson<IdlixHomepageResponse>(responseText)
-                val allSections = mutableListOf<HomepageSection>()
-                
-                parsed.above?.let { allSections.addAll(it) }
-                parsed.below?.let { allSections.addAll(it) }
-
-                for (section in allSections) {
-                    val sectionData = section.data ?: continue
-                    if (section.type == "latest_episodes") continue 
-
-                    for (item in sectionData) {
-                        val content = item.getActualContent()
-                        val rawTitle = content.title ?: continue
-                        val slug = content.slug ?: continue
-                        
-                        val typeRaw = item.contentType ?: content.contentType ?: ""
-                        val isSeries = typeRaw.contains("series", true) || typeRaw.contains("episode", true)
-                        
-                        val displayTitle = formatTitle(rawTitle, item.numberOfSeasons ?: content.numberOfSeasons)
-                        val href = "$mainUrl/${if (isSeries) "series" else "movie"}/$slug"
-                        val posterPath = content.posterPath
-                        val posterUrl = if (posterPath.isNullOrEmpty() || posterPath == "null") "" 
-                                        else "https://image.tmdb.org/t/p/w342$posterPath"
-
-                        if (isSeries) {
-                            homeItems.add(
-                                newTvSeriesSearchResponse(displayTitle, href, TvType.TvSeries) {
-                                    this.posterUrl = posterUrl
-                                    this.quality = getQualityFromString(content.quality ?: "")
-                                    this.score = Score.from10(content.voteAverage)
-                                }
-                            )
-                        } else {
-                            homeItems.add(
-                                newMovieSearchResponse(displayTitle, href, TvType.Movie) {
-                                    this.posterUrl = posterUrl
-                                    this.quality = getQualityFromString(content.quality ?: "")
-                                    this.score = Score.from10(content.voteAverage)
-                                }
-                            )
-                        }
-                    }
+        val url = if (request.data.contains("%d")) request.data.format(page) else request.data
+        val res = app.get(url, timeout = 10000L).parsedSafe<ApiResponse>() ?: return newHomePageResponse(request.name, emptyList())
+        val home = res.data.map { item ->
+            val title = item.title ?: "UnKnown"
+            val poster = item.posterPath?.let { "https://image.tmdb.org/t/p/w342$it" }
+            if (item.contentType == "movie") {
+                val movieurl = "$mainUrl/api/movies/${item.slug}"
+                newMovieSearchResponse(title, movieurl, TvType.Movie) {
+                    this.posterUrl = poster
+                    this.year = item.releaseDate?.substringBefore("-")?.toIntOrNull()
+                    this.quality = getSearchQuality(item.quality)
+                    this.score = Score.from10(item.voteAverage)
                 }
-            } catch (e: Exception) {
-                Log.e("adixtream", "Error: ${e.message}")
-            }
-            return newHomePageResponse(request.name, homeItems.distinctBy { it.url }, hasNext = false)
-        } 
-        else {
-            val apiUrl = url.replace("page=1", "page=$page")
-            val responseText = app.get(apiUrl, headers = mapOf("Accept" to "application/json")).text
-            val categoryItems = mutableListOf<SearchResponse>()
-            var hasNextPage = false
-
-            try {
-                val parsed = AppUtils.parseJson<IdlixPaginatedResponse>(responseText)
-                val items = parsed.data ?: emptyList()
-                
-                val currentPage = parsed.pagination?.page ?: page
-                val totalPages = parsed.pagination?.totalPages ?: 1
-                hasNextPage = currentPage < totalPages
-
-                for (item in items) {
-                    val rawTitle = item.title ?: item.originalTitle ?: continue
-                    val slug = item.slug ?: continue
-                    
-                    val typeRaw = item.contentType ?: ""
-                    val isSeries = typeRaw.contains("series", true) || url.contains("series")
-                    
-                    val displayTitle = formatTitle(rawTitle, item.numberOfSeasons)
-                    val href = "$mainUrl/${if (isSeries) "series" else "movie"}/$slug"
-                    val posterPath = item.posterPath
-                    val posterUrl = if (posterPath.isNullOrEmpty() || posterPath == "null") "" 
-                                    else "https://image.tmdb.org/t/p/w342$posterPath"
-
-                    if (isSeries) {
-                        categoryItems.add(
-                            newTvSeriesSearchResponse(displayTitle, href, TvType.TvSeries) {
-                                this.posterUrl = posterUrl
-                                this.quality = getQualityFromString(item.quality ?: "")
-                                this.score = Score.from10(item.voteAverage)
-                            }
-                        )
-                    } else {
-                        categoryItems.add(
-                            newMovieSearchResponse(displayTitle, href, TvType.Movie) {
-                                this.posterUrl = posterUrl
-                                this.quality = getQualityFromString(item.quality ?: "")
-                                this.score = Score.from10(item.voteAverage)
-                            }
-                        )
-                    }
+            } else {
+                val seriesurl = "$mainUrl/api/series/${item.slug}"
+                newTvSeriesSearchResponse(title, seriesurl, TvType.TvSeries) {
+                    this.posterUrl = poster
+                    this.year = item.releaseDate?.substringBefore("-")?.toIntOrNull()
+                    this.score = Score.from10(item.voteAverage)
+                    this.quality = getSearchQuality(item.quality)
                 }
-            } catch (e: Exception) {
-                Log.e("adixtream", "Error: ${e.message}")
             }
-            return newHomePageResponse(request.name, categoryItems.distinctBy { it.url }, hasNext = hasNextPage)
         }
+
+        return newHomePageResponse(request.name, home)
     }
 
-    override suspend fun search(query: String): List<SearchResponse> {
-        val encodedQuery = java.net.URLEncoder.encode(query, "utf-8")
-        val url = "$mainUrl/api/search?q=$encodedQuery"
-        
-        val responseText = app.get(url).text
-        val searchItems = mutableListOf<SearchResponse>()
-        
-        try {
-            val parsed = AppUtils.parseJson<IdlixSearchResponse>(responseText)
-            val items = parsed.data ?: parsed.results ?: emptyList()
-            
-            for (item in items) {
-                val rawTitle = item.title ?: item.originalTitle ?: continue
-                val slug = item.slug ?: continue
-                
-                val typeRaw = item.contentType ?: ""
-                val isSeries = typeRaw.contains("series", true)
-            
-                val displayTitle = formatTitle(rawTitle, item.numberOfSeasons)
-                val href = "$mainUrl/${if (isSeries) "series" else "movie"}/$slug"
-                val posterPath = item.posterPath
-                val posterUrl = if (posterPath.isNullOrEmpty() || posterPath == "null") "" 
-                                else "https://image.tmdb.org/t/p/w342$posterPath"
+    override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query,1)?.items
 
-                if (isSeries) {
-                    searchItems.add(
-                        newTvSeriesSearchResponse(displayTitle, href, TvType.TvSeries) {
-                            this.posterUrl = posterUrl
-                            this.quality = getQualityFromString(item.quality ?: "")
-                            this.score = Score.from10(item.voteAverage)
-                        }
-                    )
-                } else {
-                    searchItems.add(
-                        newMovieSearchResponse(displayTitle, href, TvType.Movie) {
-                            this.posterUrl = posterUrl
-                            this.quality = getQualityFromString(item.quality ?: "")
-                            this.score = Score.from10(item.voteAverage)
-                        }
-                    )
+    override suspend fun search(query: String, page: Int): SearchResponseList? {
+        val url = "$mainUrl/api/search?q=$query&page=$page&limit=8"
+        val res = app.get(url).parsedSafe<SearchApiResponse>() ?: return null
+        val items = res.results
+        val results = items.mapNotNull { item ->
+            val title = item.title
+            val poster = item.posterPath.let { "https://image.tmdb.org/t/p/w342$it" }
+            val year = (item.releaseDate ?: item.firstAirDate)?.substringBefore("-")?.toIntOrNull()
+
+            val link = when (item.contentType) {
+                "movie" -> "$mainUrl/api/movies/${item.slug}"
+                "tv_series", "series" -> "$mainUrl/api/series/${item.slug}"
+                else -> return@mapNotNull null
+            }
+
+            val rating = item.voteAverage
+
+            if (item.contentType == "movie") {
+                newMovieSearchResponse(title, link, TvType.Movie) {
+                    this.posterUrl = poster
+                    this.year = year
+                    this.quality = getQualityFromString(item.quality)
+                    this.score = rating.let { Score.from10(it) }
+                }
+            } else {
+                newTvSeriesSearchResponse(title, link, TvType.TvSeries) {
+                    this.posterUrl = poster
+                    this.year = year
+                    this.score = rating.let { Score.from10(it) }
                 }
             }
-        } catch (e: Exception) {
-            Log.e("adixtream", "Error: ${e.message}")
         }
-        return searchItems
+
+        return results.toNewSearchResponseList()
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val isSeries = url.contains("/series/")
-        val slug = url.split("/").last()
-        
-        val apiUrl = "$mainUrl/api/${if (isSeries) "series" else "movies"}/$slug"
-        val responseText = app.get(apiUrl).text
-        val response = AppUtils.parseJson<IdlixDetailResponse>(responseText)
-        
-        val title = response.title ?: response.name ?: ""
-        val poster = if (response.posterPath.isNullOrEmpty() || response.posterPath == "null") "" else "https://image.tmdb.org/t/p/w500${response.posterPath}"
-        val background = if (response.backdropPath.isNullOrEmpty() || response.backdropPath == "null") "" else "https://image.tmdb.org/t/p/w1280${response.backdropPath}"
-        val plot = response.overview
-        val year = (response.releaseDate ?: response.firstAirDate)?.split("-")?.firstOrNull()?.toIntOrNull()
-        
-        val ratingStr = response.voteAverage?.toFloatOrNull()?.times(10)?.toInt()?.toString()
-        val trailer = response.trailerUrl
-        val tags = response.genres?.mapNotNull { it.name }
-        
-        val actors = response.cast?.mapNotNull {
-            val actorName = it.name ?: return@mapNotNull null
-            val pPath = it.profilePath
-            val profile = if (pPath.isNullOrEmpty() || pPath == "null") null else "https://image.tmdb.org/t/p/w185$pPath"
-            Actor(actorName, profile)
+        val detailApiUrl = url.toIdlixDetailApiUrl()
+        val response = app.get(detailApiUrl, timeout = 10000L, referer = mainUrl)
+
+        val data = response.parsedSafe<DetailResponse>()
+            ?: throw ErrorLoadingException("Invalid JSON")
+
+        val title = data.title ?: "Unknown"
+        val poster = data.posterPath?.let { "https://image.tmdb.org/t/p/w500$it" }
+        val backdrop = data.backdropPath?.let { "https://image.tmdb.org/t/p/original$it" }
+
+        val year = (data.releaseDate ?: data.firstAirDate)
+            ?.substringBefore("-")
+            ?.toIntOrNull()
+
+        val tags = data.genres?.mapNotNull { it.name } ?: emptyList()
+        val logourl = "https://image.tmdb.org/t/p/original"+data.logoPath
+        val actors = data.cast?.map {
+            Actor(it.name ?: "", it.profilePath?.let { p -> "https://image.tmdb.org/t/p/w185$p" })
+        } ?: emptyList()
+
+        val trailer = data.trailerUrl
+        val rating = data.voteAverage
+
+        val relatedUrl = if (data.seasons != null) {
+            "$mainUrl/api/series/${data.slug}/related"
+        } else {
+            "$mainUrl/api/movies/${data.slug}/related"
         }
 
-        if (isSeries) {
-            val episodes = arrayListOf<Episode>()
-            val seasonNamesList = mutableListOf<SeasonData>()
-            val totalSeasons = response.numberOfSeasons ?: 1 
-            
-            for (seasonNum in 1..totalSeasons) {
-                val seasonApiUrl = "$mainUrl/api/series/$slug/season/$seasonNum"
-                try {
-                    val seasonResText = app.get(seasonApiUrl).text
-                    val parsedSeason = AppUtils.parseJson<IdlixSeasonApiResponse>(seasonResText)
-                    val epList = parsedSeason.season?.episodes
-                    
-                    if (!epList.isNullOrEmpty()) {
-                        seasonNamesList.add(SeasonData(seasonNum, "Season $seasonNum"))
-                        epList.forEach { ep ->
-                            if (ep.hasVideo == true) {
-                                val epId = ep.id ?: return@forEach
-                                val still = ep.stillPath
-                                val epPoster = if (still.isNullOrEmpty() || still == "null") null else "https://image.tmdb.org/t/p/w500$still"
-                                val loadData = "episode|$epId|$url"
-                            
-                                episodes.add(newEpisode(loadData) {
-                                    this.name = ep.name
-                                    this.season = seasonNum
-                                    this.episode = ep.episodeNumber
-                                    this.posterUrl = epPoster
-                                    this.description = ep.overview
-                                })
-                            }
+        val weburl =if (data.seasons != null) {
+            "$mainUrl/series/${data.slug}"
+        } else {
+            "$mainUrl/movie/${data.slug}"
+        }
+
+        val recommendations = try {
+            app.get(relatedUrl, referer = mainUrl)
+                .parsedSafe<ApiResponse>()?.data?.mapNotNull { item ->
+
+                    val title = item.title ?: return@mapNotNull null
+                    val poster = item.posterPath?.let { "https://image.tmdb.org/t/p/w342$it" }
+
+                    val link = if (item.contentType == "movie") {
+                        "$mainUrl/api/movies/${item.slug}"
+                    } else {
+                        "$mainUrl/api/series/${item.slug}"
+                    }
+
+                    if (item.contentType == "movie") {
+                        newMovieSearchResponse(title, link, TvType.Movie) {
+                            this.posterUrl = poster
+                            this.year = (item.releaseDate ?: item.firstAirDate)
+                                ?.substringBefore("-")
+                                ?.toIntOrNull()
+                        }
+                    } else {
+                        newTvSeriesSearchResponse(title, link, TvType.TvSeries) {
+                            this.posterUrl = poster
+                            this.year = (item.releaseDate ?: item.firstAirDate)
+                                ?.substringBefore("-")
+                                ?.toIntOrNull()
                         }
                     }
-                } catch (e: Exception) {
-                    Log.e("adixtream", "Error: ${e.message}")
+
+                } ?: emptyList()
+
+        } catch (_: Exception) {
+            emptyList()
+        }
+
+        return if (data.seasons != null) {
+            val episodes = mutableListOf<Episode>()
+
+            data.firstSeason?.episodes?.forEach { ep ->
+                episodes.add(
+                    newEpisode( LoadData(
+                        id = ep.id ?: return@forEach,
+                        type = "episode"
+                    ).toJson()) {
+                        this.name = ep.name
+                        this.season = data.firstSeason.seasonNumber
+                        this.episode = ep.episodeNumber
+                        this.description = ep.overview
+                        this.runTime = ep.runtime
+                        this.score = Score.from10(ep.voteAverage?.toString())
+                        addDate(ep.airDate)
+                        this.posterUrl = ep.stillPath?.let { "https://image.tmdb.org/t/p/w300$it" }
+                    }
+                )
+            }
+
+            data.seasons.forEach { season ->
+                val seasonNum = season.seasonNumber ?: return@forEach
+                if (seasonNum == data.firstSeason?.seasonNumber) return@forEach
+                val seasonUrl = "$mainUrl/api/series/${data.slug}/season/$seasonNum"
+
+                val seasonData = try {
+                    val res = app.get(seasonUrl, referer = mainUrl)
+                    res.parsedSafe<SeasonWrapper>()?.season
+                } catch (_: Exception) {
+                    null
+                }
+
+                seasonData?.episodes?.forEach { ep ->
+                    episodes.add(
+                        newEpisode( LoadData(
+                            id = ep.id ?: return@forEach,
+                            type = "episode"
+                        ).toJson()) {
+                            this.name = ep.name
+                            this.season = seasonNum
+                            this.episode = ep.episodeNumber
+                            this.description = ep.overview
+                            this.runTime = ep.runtime
+                            this.score = Score.from10(ep.voteAverage?.toString())
+                            addDate(ep.airDate)
+                            this.posterUrl = ep.stillPath?.let { "https://image.tmdb.org/t/p/w300$it" }
+                        }
+                    )
                 }
             }
 
-            return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+            newTvSeriesLoadResponse(title, weburl, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
-                this.backgroundPosterUrl = background
+                this.backgroundPosterUrl = backdrop
+                this.logoUrl = logourl
                 this.year = year
-                this.plot = plot
+                this.plot = data.overview
                 this.tags = tags
-                this.score = Score.from10(ratingStr)
-                addSeasonNames(seasonNamesList) 
-                if (actors != null) addActors(actors)
+                this.score = Score.from10(rating?.toString())
+                addActors(actors)
                 addTrailer(trailer)
+                addTMDbId(data.tmdbId)
+                addImdbId(data.imdbId)
+                this.recommendations = recommendations
             }
         } else {
-            val movieId = response.id ?: slug
-            val loadData = "movie|$movieId|$url"
-            
-            return newMovieLoadResponse(title, url, TvType.Movie, loadData) {
+            newMovieLoadResponse(title, weburl, TvType.Movie,  LoadData(
+                id = data.id ?: "",
+                type = "movie"
+            ).toJson()) {
                 this.posterUrl = poster
-                this.backgroundPosterUrl = background
+                this.backgroundPosterUrl = backdrop
+                this.logoUrl = logourl
                 this.year = year
-                this.plot = plot
+                this.plot = data.overview
                 this.tags = tags
-                this.score = Score.from10(ratingStr)
-                if (actors != null) addActors(actors)
+                this.score = Score.from10(rating?.toString())
+                addActors(actors)
                 addTrailer(trailer)
+                addTMDbId(data.tmdbId)
+                addImdbId(data.imdbId)
+                this.recommendations = recommendations
             }
         }
+    }
+
+
+    private fun String.toIdlixDetailApiUrl(): String {
+        val value = trim()
+        if (value.isBlank()) return value
+        if (value.contains("/api/movies/", true) || value.contains("/api/series/", true)) return value
+
+        fun slugAfter(marker: String): String? = value
+            .substringAfter(marker, "")
+            .substringBefore("?")
+            .substringBefore("#")
+            .substringBefore("/")
+            .takeIf { it.isNotBlank() }
+
+        slugAfter("/movie/")?.let { return "$mainUrl/api/movies/$it" }
+        slugAfter("/series/")?.let { return "$mainUrl/api/series/$it" }
+
+        return value
     }
 
     override suspend fun loadLinks(
@@ -295,170 +348,162 @@ class IdlixProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        try {
-            var contentType = "movie"
-            var contentId = data
-            var refererUrl = "$mainUrl/"
 
-            // Sistem Fallback: Mengecek apakah 'data' berupa format "tipe|id|url" atau hanya URL mentah karena Cache
-            if (data.contains("|")) {
-                val parts = data.split("|")
-                val rawContentType = parts.getOrNull(0) ?: "movie"
-                contentType = rawContentType.substringAfterLast("/")
-                contentId = parts.getOrNull(1) ?: data 
-                refererUrl = parts.getOrNull(2) ?: "$mainUrl/"
-            } else if (data.startsWith("http")) {
-                // Jika aplikasi mengirimkan URL mentah (sering terjadi jika movie dibuka dari Cache)
-                refererUrl = data
-                val isSeries = data.contains("/series/")
-                val slug = data.split("/").last()
-                val apiUrl = "$mainUrl/api/${if (isSeries) "series" else "movies"}/$slug"
-                
-                val responseText = app.get(apiUrl).text
-                val detail = AppUtils.parseJson<IdlixDetailResponse>(responseText)
-                
-                contentId = detail.id ?: slug
-                contentType = if (isSeries) "episode" else "movie"
+        val parsed = try {
+            parseJson<LoadData>(data)
+        } catch (_: Exception) {
+            null
+        } ?: return false
+
+        val contentId = parsed.id
+        val contentType = parsed.type
+
+        val headers = mapOf(
+            "Referer" to "$mainUrl/",
+            "Origin" to mainUrl,
+            "Accept" to "*/*",
+            "Content-Type" to "application/json"
+        )
+
+        val playResponse = app.get(
+            "$mainUrl/api/watch/play-info/$contentType/$contentId",
+            headers = headers
+        )
+
+        val cookies = playResponse.cookies
+        val playInfo = playResponse.parsedSafe<Res>() ?: return false
+
+        // WAIT
+        val waitTime = (
+                playInfo.unlockAt -
+                        playInfo.serverNow
+                ).coerceAtLeast(0)
+        val totalWait = waitTime / 1000
+        var elapsed = 0L
+        while (elapsed < totalWait) {
+            Log.d(name, "Waiting: ${elapsed}s / ${totalWait}s")
+            delay(1000)
+            elapsed++
+        }
+
+        val claimJson = """
+    {
+        "gateToken": "${playInfo.gateToken}"
+    }
+    """.trimIndent()
+
+        val claimApi = app.post(
+            "$mainUrl/api/watch/session/claim",
+            headers = headers,
+            cookies = cookies,
+            requestBody = claimJson.toRequestBody(
+                "application/json".toMediaType()
+            )
+        ).parsedSafe<RedeemRes>() ?: return false
+
+        val redeemJson = """
+    {
+        "claim": "${claimApi.claim}"
+    }
+    """.trimIndent()
+
+        val iframeResponse = app.post(
+            claimApi.redeemUrl,
+            headers = headers,
+            cookies = cookies,
+            requestBody = redeemJson.toRequestBody(
+                "application/json".toMediaType()
+            )
+        ).parsedSafe<Iframe>() ?: return false
+
+        iframeResponse.url
+            ?.takeIf { it.isNotBlank() }
+            ?.let { streamUrl ->
+
+                generateM3u8(
+                    name,
+                    streamUrl,
+                    mainUrl
+                ).forEach(callback)
             }
 
-            val headers = mapOf(
-                "Referer" to refererUrl, 
-                "Origin" to mainUrl, 
-                "Accept" to "application/json, text/plain, */*",
-                "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36"
+        iframeResponse.subtitles.forEach { subtitle ->
+            subtitleCallback(
+                newSubtitleFile(
+                    subtitle.label,
+                    subtitle.path
+                )
             )
-
-            // Meminta token claim dari endpoint play-info terbaru
-            val playInfoRes = app.get(
-                url = "$mainUrl/api/watch/play-info/$contentType/$contentId",
-                headers = headers
-            ).parsedSafe<PlayInfoResponse>() ?: return false
-
-            val claim = playInfoRes.claim ?: return false
-            
-            // Melempar URL palsu berisi token claim ke file Majorplay.kt
-            val fakeUrl = "https://e2e.majorplay.net/play?claim=$claim"
-            loadExtractor(fakeUrl, refererUrl, subtitleCallback, callback)
-            
-            return true
-        } catch (e: Exception) {
-            Log.e("adixtream", "Error di loadLinks: ${e.message}")
-            return false
         }
+
+        return true
     }
 }
 
-// ============================================================================
-// DATA CLASSES 
-// ============================================================================
+fun getSearchQuality(check: String?): SearchQuality? {
+    val s = check ?: return null
+    val u = Normalizer.normalize(s, Normalizer.Form.NFKC).lowercase()
+    val patterns = listOf(
+        Regex("\\b(4k|ds4k|uhd|2160p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.FourK,
 
-data class IdlixPaginatedResponse(
-    @JsonProperty("data") val data: List<ContentData>? = null,
-    @JsonProperty("pagination") val pagination: PaginationData? = null
-)
+        // CAM / THEATRE SOURCES FIRST
+        Regex("\\b(hdts|hdcam|hdtc)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HdCam,
+        Regex("\\b(camrip|cam[- ]?rip)\\b", RegexOption.IGNORE_CASE) to SearchQuality.CamRip,
+        Regex("\\b(cam)\\b", RegexOption.IGNORE_CASE) to SearchQuality.Cam,
 
-data class PaginationData(
-    @JsonProperty("page") val page: Int? = null,
-    @JsonProperty("totalPages") val totalPages: Int? = null
-)
+        // WEB / RIP
+        Regex("\\b(web[- ]?dl|webrip|webdl)\\b", RegexOption.IGNORE_CASE) to SearchQuality.WebRip,
 
-data class IdlixHomepageResponse(
-    @JsonProperty("above") val above: List<HomepageSection>? = null,
-    @JsonProperty("below") val below: List<HomepageSection>? = null
-)
+        // BLURAY
+        Regex("\\b(bluray|bdrip|blu[- ]?ray)\\b", RegexOption.IGNORE_CASE) to SearchQuality.BlueRay,
 
-data class HomepageSection(
-    @JsonProperty("type") val type: String? = null,
-    @JsonProperty("title") val title: String? = null,
-    @JsonProperty("data") val data: List<HomepageItem>? = null
-)
+        // RESOLUTIONS
+        Regex("\\b(1440p|qhd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.BlueRay,
+        Regex("\\b(1080p|fullhd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HD,
+        Regex("\\b(720p)\\b", RegexOption.IGNORE_CASE) to SearchQuality.SD,
 
-data class HomepageItem(
-    @JsonProperty("contentType") val contentType: String? = null,
-    @JsonProperty("content") val content: ContentData? = null,
-    @JsonProperty("id") val id: String? = null,
-    @JsonProperty("title") val title: String? = null,
-    @JsonProperty("originalTitle") val originalTitle: String? = null,
-    @JsonProperty("slug") val slug: String? = null,
-    @JsonProperty("posterPath") val posterPath: String? = null,
-    @JsonProperty("quality") val quality: String? = null,
-    @JsonProperty("voteAverage") val voteAverage: String? = null,
-    @JsonProperty("numberOfSeasons") val numberOfSeasons: Int? = null
-) {
-    fun getActualContent(): ContentData {
-        return content ?: ContentData(
-            id = id,
-            title = title ?: originalTitle,
-            slug = slug,
-            posterPath = posterPath,
-            contentType = contentType,
-            quality = quality,
-            voteAverage = voteAverage,
-            numberOfSeasons = numberOfSeasons
-        )
-    }
+        // GENERIC HD LAST
+        Regex("\\b(hdrip|hdtv)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HD,
+
+        Regex("\\b(dvd)\\b", RegexOption.IGNORE_CASE) to SearchQuality.DVD,
+        Regex("\\b(hq)\\b", RegexOption.IGNORE_CASE) to SearchQuality.HQ,
+        Regex("\\b(rip)\\b", RegexOption.IGNORE_CASE) to SearchQuality.CamRip
+    )
+
+
+    for ((regex, quality) in patterns) if (regex.containsMatchIn(u)) return quality
+    return null
 }
 
-data class ContentData(
-    @JsonProperty("id") val id: String? = null,
-    @JsonProperty("title") val title: String? = null,
-    @JsonProperty("originalTitle") val originalTitle: String? = null,
-    @JsonProperty("slug") val slug: String? = null,
-    @JsonProperty("posterPath") val posterPath: String? = null,
-    @JsonProperty("contentType") val contentType: String? = null,
-    @JsonProperty("quality") val quality: String? = null,
-    @JsonProperty("voteAverage") val voteAverage: String? = null,
-    @JsonProperty("numberOfSeasons") val numberOfSeasons: Int? = null
+
+data class Res(
+    val gateToken: String,
+    val serverNow: Long,
+    val unlockAt: Long,
 )
 
-data class IdlixSearchResponse(
-    @JsonProperty("data") val data: List<ContentData>? = null,
-    @JsonProperty("results") val results: List<ContentData>? = null
+data class RedeemRes(
+    val kind: String,
+    val claim: String,
+    val redeemUrl: String,
+    val videoId: String,
+    val title: String,
+    val durationSec: Long,
+    val viewerTier: String,
+    val maxHeight: Long,
 )
 
-data class IdlixDetailResponse(
-    @JsonProperty("id") val id: String? = null,
-    @JsonProperty("title") val title: String? = null,
-    @JsonProperty("name") val name: String? = null,
-    @JsonProperty("overview") val overview: String? = null,
-    @JsonProperty("posterPath") val posterPath: String? = null,
-    @JsonProperty("backdropPath") val backdropPath: String? = null,
-    @JsonProperty("voteAverage") val voteAverage: String? = null,
-    @JsonProperty("firstAirDate") val firstAirDate: String? = null,
-    @JsonProperty("releaseDate") val releaseDate: String? = null,
-    @JsonProperty("trailerUrl") val trailerUrl: String? = null,
-    @JsonProperty("numberOfSeasons") val numberOfSeasons: Int? = null,
-    @JsonProperty("genres") val genres: List<Genre>? = null,
-    @JsonProperty("cast") val cast: List<Cast>? = null
+
+data class Iframe(
+    val code: String? = null,
+    val url: String? = null,
+    val expiresAt: Long? = null,
+    val subtitles: List<Subtitle> = emptyList(),
+    val videoId: String? = null,
 )
 
-data class IdlixSeasonApiResponse(
-    @JsonProperty("season") val season: SeasonDetail? = null
-)
-
-data class SeasonDetail(
-    @JsonProperty("seasonNumber") val seasonNumber: Int? = null,
-    @JsonProperty("episodes") val episodes: List<EpisodeDetail>? = null
-)
-
-data class EpisodeDetail(
-    @JsonProperty("id") val id: String? = null,
-    @JsonProperty("episodeNumber") val episodeNumber: Int? = null,
-    @JsonProperty("name") val name: String? = null,
-    @JsonProperty("overview") val overview: String? = null,
-    @JsonProperty("stillPath") val stillPath: String? = null,
-    @JsonProperty("hasVideo") val hasVideo: Boolean? = null
-)
-
-data class Genre(@JsonProperty("name") val name: String? = null)
-
-data class Cast(
-    @JsonProperty("name") val name: String? = null,
-    @JsonProperty("profilePath") val profilePath: String? = null
-)
-
-data class PlayInfoResponse(
-    @JsonProperty("claim") val claim: String? = null,
-    @JsonProperty("redeemUrl") val redeemUrl: String? = null,
-    @JsonProperty("videoId") val videoId: String? = null
+data class Subtitle(
+    val lang: String,
+    val label: String,
+    val path: String,
 )
