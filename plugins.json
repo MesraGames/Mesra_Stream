@@ -258,6 +258,31 @@
         "name": "DrakoridProvider"
     },
     {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=drakor.kita.mobi&sz=%size%",
+        "jarFileSize": 198036,
+        "fileHash": "sha256-56a17298db87fc45990a0f6e32f036fa1650c8469197310268cf79bbd0528496",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 53119,
+        "status": 3,
+        "language": "id",
+        "authors": [
+            "sad25kag"
+        ],
+        "tvTypes": [
+            "AsianDrama",
+            "TvSeries",
+            "Movie"
+        ],
+        "version": 8,
+        "internalName": "DrakorKita",
+        "jarUrl": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/DrakorKita.jar",
+        "description": "DrakorKita - drama Korea, series, dan movie subtitle Indonesia",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/DrakorKita.cs3",
+        "name": "DrakorKita",
+        "jarHash": "sha256-b1486136731b5177bc813c872a90ff444e861d1262a7fb30ca949717ad14f00b"
+    },
+    {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://drama-id.com&size=%size%",
         "fileHash": "sha256-df24fd082a4baaed4843b6969825de293167a1e894ea3d51277a9f2a8647cf0d",
         "apiVersion": 1,
@@ -367,6 +392,27 @@
         "description": "Filmkita",
         "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Filmkita.cs3",
         "name": "Filmkita"
+    },
+    {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=tv1.filmlokal.me&sz=256",
+        "fileHash": "sha256-e7bd97e6450c4eeeabd3ba885372ba08d88b7c2341ad40bcf6f884af4dd78446",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 57529,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "sad25kag"
+        ],
+        "tvTypes": [
+            "Movie",
+            "TvSeries"
+        ],
+        "version": 10,
+        "internalName": "FilmLokal",
+        "description": "FilmLokal provider split-structure dengan search fallback dan DooPlay/AJAX loadLinks untuk tv1.filmlokal.me.",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/FilmLokal.cs3",
+        "name": "FilmLokal"
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://free-reels.com&size=%size%",
