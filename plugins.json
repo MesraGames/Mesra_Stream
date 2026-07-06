@@ -755,6 +755,26 @@
         "name": "LayarKacaProvider"
     },
     {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=hisgloryco.com&sz=%size%",
+        "fileHash": "sha256-619bf6b473e0f85e46abcec552fe0980703557ca335e7a797f325a8b4f96d899",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 35158,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "sad25kag"
+        ],
+        "tvTypes": [
+            "Movie"
+        ],
+        "version": 4,
+        "internalName": "LayarWarna21",
+        "description": "LayarWarna21 provider RC v4: source-backed Muvipro flow with CloudStream API-compatible card metadata and local extractors.",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/LayarWarna21.cs3",
+        "name": "LayarWarna21"
+    },
+    {
         "iconUrl": "http://mangoporn.net/wp-content/uploads/2024/07/mangoporn.net_.png",
         "fileHash": "sha256-2ecd7d90e02d21f925452d195f092881dd35a74134a0f3a3aef678c82461122d",
         "apiVersion": 1,
