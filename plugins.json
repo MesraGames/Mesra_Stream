@@ -1292,6 +1292,28 @@
         "name": "Pusatfilm21Provider"
     },
     {
+        "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://saikonime.ink&size=%size%",
+        "fileHash": "sha256-d8648d83d7e3d1e750e2a6e63988baf8de461615fe070fff3b172015e8170348",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 42018,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "RavenX"
+        ],
+        "tvTypes": [
+            "Anime",
+            "AnimeMovie",
+            "OVA"
+        ],
+        "version": 2,
+        "internalName": "SaikoNime",
+        "description": "SaikoNime - Platform Nonton Anime Subtitle Indonesia",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/SaikoNime.cs3",
+        "name": "SaikoNime"
+    },
+    {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://v1.samehadaku.how&size=%size%",
         "fileHash": "sha256-7c6ecee00e6e308efc5ee774d10b0d375b2b84f7540687906c0b48b0745e0845",
         "apiVersion": 1,
@@ -1312,6 +1334,52 @@
         "internalName": "Samehadaku",
         "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Samehadaku.cs3",
         "name": "Samehadaku"
+    },
+    {
+        "iconUrl": "https://ui-avatars.com/api/?name=SarangFilm21&background=111111&color=ff0000&size=256&font-size=0.45",
+        "fileHash": "sha256-0c0230f3752178c71d5f975f6d31203e0d2bd6b84bdfaf5a44fae5e20052519b",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 41380,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "RavenX"
+        ],
+        "tvTypes": [
+            "Movie",
+            "TvSeries"
+        ],
+        "version": 2,
+        "internalName": "SarangFilm21",
+        "description": "Provider CloudStream untuk SarangFilm21.",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/SarangFilm21.cs3",
+        "name": "SarangFilm21"
+    },
+    {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=new13.savefilm21info.com&sz=%size%",
+        "jarFileSize": 109179,
+        "fileHash": "sha256-54a86dc5efb9c7e3a273048c3fed188b74798c0240ee303c8cc6ddc4f726b5b5",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 36206,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "RavenX"
+        ],
+        "tvTypes": [
+            "Movie",
+            "TvSeries",
+            "AsianDrama"
+        ],
+        "version": 4,
+        "internalName": "SaveFilm21",
+        "jarUrl": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/SaveFilm21.jar",
+        "description": "SaveFilm21 provider untuk streaming film dan series subtitle Indonesia dari new13.savefilm21info.com. Parser dibuat evidence-based dari source aktif dengan homepage/category cards, detail movie/series, multi-server playback (sf21.vidplayer.live, sf21.rpmvid.com), dan episode navigator via /eps/ path.",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/SaveFilm21.cs3",
+        "name": "SaveFilm21",
+        "jarHash": "sha256-84a9f8be6a10b7a9779d6bdd64ab18b9e02c5e9c7452724998a54d227e87d144"
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://sflix.film&size=%size%",
