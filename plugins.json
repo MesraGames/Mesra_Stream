@@ -1077,6 +1077,28 @@
         "name": "NontonAnimeIDProvider"
     },
     {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=nonton.drakor-id.top&sz=%size%",
+        "fileHash": "sha256-a6056ea7c035dee54ebb8b6ccce3960ac6575627f6d882abc5cf0bea078993d5",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 56436,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "sad25kag"
+        ],
+        "tvTypes": [
+            "AsianDrama",
+            "TvSeries",
+            "Movie"
+        ],
+        "version": 6,
+        "internalName": "NontonDrakor",
+        "description": "Provider CloudStream untuk NontonDrakor / Drakor ID - film dan serial TV subtitle Indonesia.",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/NontonDrakor.cs3",
+        "name": "NontonDrakor"
+    },
+    {
         "iconUrl": "https://www.google.com/s2/favicons?domain=onetouchtv.xyz/&sz=%size%",
         "jarFileSize": 166595,
         "fileHash": "sha256-e3ee8e73f5df87d67cca13e2fddf01e876930db4bb2e8aa1e801ec880f6e1b34",
