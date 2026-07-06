@@ -1,10 +1,10 @@
 [
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://anichin.club&size=%size%",
-        "fileHash": "sha256-5a1d8c37ca4c67bb547b6851235dddca9f5696b0848ec0a80f0c38f5e5ffcab7",
+        "fileHash": "sha256-0d2b3d123b824148ccbc19dfcb7ce1efa70abd9cc531588637cc59df4f1dfdd8",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 32637,
+        "fileSize": 33832,
         "status": 1,
         "language": "id",
         "authors": [
@@ -24,10 +24,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://v1.animasu.top&size=%size%",
-        "fileHash": "sha256-62490d1a4b5dc3cd1f3ba5e04f4a314eb528cba98cea476470cb76f7a2272306",
+        "fileHash": "sha256-958334bfd223aceeef4dff24421c50f84aeff85af29a2de78eb627585d7ad0ab",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 24893,
+        "fileSize": 26049,
         "status": 1,
         "language": "id",
         "authors": [
@@ -42,27 +42,6 @@
         "internalName": "Animasu",
         "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Animasu.cs3",
         "name": "Animasu"
-    },
-    {
-        "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://154.26.137.28&size=%size%",
-        "fileHash": "sha256-0a878eda25e4851214277d507ff5f4c637a4a800006aaa3079e6123708befc46",
-        "apiVersion": 1,
-        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 60321,
-        "status": 1,
-        "language": "id",
-        "authors": [
-            "Hexated, Duro92"
-        ],
-        "tvTypes": [
-            "AnimeMovie",
-            "Anime",
-            "OVA"
-        ],
-        "version": 2,
-        "internalName": "AnimeSailProvider",
-        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/AnimeSailProvider.cs3",
-        "name": "AnimeSailProvider"
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://animexin.dev&size=%size%",
@@ -109,10 +88,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://anoboy.be&size=%size%",
-        "fileHash": "sha256-53cac281b5bb6d5fd50d8a466eb45107efe9199a1a884a3a1af0f11d198c3eef",
+        "fileHash": "sha256-b9a82d00d1c60ba32c31724e70bf1116d3619224192806ab82a7f4e8ce15f164",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 58235,
+        "fileSize": 58236,
         "status": 1,
         "language": "id",
         "authors": [
@@ -131,7 +110,7 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://auratail.vip&size=%size%",
-        "fileHash": "sha256-2acaf24739f86357c581582418e5279e3f6d750b80a07a3e4d5122cc23200ab1",
+        "fileHash": "sha256-682542f513d1c5d0aed3f4b40f3b36ee53a93236a39bf643a3ee6b25d841d0b9",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
         "fileSize": 36267,
@@ -153,10 +132,10 @@
     },
     {
         "iconUrl": "https://www.themoviedb.org/favicon.ico",
-        "fileHash": "sha256-0e0c1bcd67d19ee1c444cd4fbf67aa0eb262a2dacc555936cb12ff4b2e256eeb",
+        "fileHash": "sha256-9e14503a571aa1e792cac885dfbf9716ab582aaf820f97bf9ab72bb0a2c0f3ec",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 62259,
+        "fileSize": 63656,
         "status": 1,
         "language": "en",
         "authors": [
@@ -174,10 +153,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://azmovies.to&size=%size%",
-        "fileHash": "sha256-9467e21864b03ea06e81a03b7ea45a2d28079118466280bd5ec545635f152033",
+        "fileHash": "sha256-d9fa1c99051b7f6cb708239927e9735ca642c59e7686d5628a55c78931c2f73b",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 53928,
+        "fileSize": 54792,
         "status": 1,
         "language": "en",
         "authors": [
@@ -193,10 +172,10 @@
         "name": "Azmovies"
     },
     {
-        "fileHash": "sha256-ba8f8ebc2805c86d78d2e29e50a934d5d54d648931941b14c4930e45664d5924",
+        "fileHash": "sha256-691b9febddd8756073dcdcbb6f0caffeda9489efe4e2c0b5c15b68f0384102e0",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 56784,
+        "fileSize": 57659,
         "status": 1,
         "language": "id",
         "authors": [
@@ -234,28 +213,6 @@
         "name": "CinemacityProvider"
     },
     {
-        "iconUrl": "https://klikxxi.me/wp-content/uploads/2024/02/cropped-site-icon.png",
-        "fileHash": "sha256-9b32ba5824195ded8af34c410bc4453bb38c9150170b287265dae2268828e567",
-        "apiVersion": 1,
-        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 236504,
-        "status": 1,
-        "language": "id",
-        "authors": [
-            "Miku"
-        ],
-        "tvTypes": [
-            "AsianDrama",
-            "TvSeries",
-            "Movie"
-        ],
-        "version": 1,
-        "internalName": "Cinemax21Provider",
-        "description": "CineMax21 \u2014 Streaming Movie and TV Series",
-        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Cinemax21Provider.cs3",
-        "name": "Cinemax21Provider"
-    },
-    {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://donghub.vip&size=%size%",
         "fileHash": "sha256-101455e5ff9f27b77928538e11f74f96eab1edab621d603c6ec8fa9b0e85b617",
         "apiVersion": 1,
@@ -280,10 +237,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://drakorid.co&size=%size%",
-        "fileHash": "sha256-f6b53b552967e6a38d9734c74ddf826283d9cceb749f5466e3fdeb558b414060",
+        "fileHash": "sha256-4720b9922153bf5409695bab136a1a41c336fd1831d556d011cd9068b9f67127",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 22682,
+        "fileSize": 23342,
         "status": 1,
         "language": "id",
         "authors": [
@@ -301,32 +258,11 @@
         "name": "DrakoridProvider"
     },
     {
-        "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://drama.sansekai.my.id&size=%size%",
-        "fileHash": "sha256-41e725482248b5af241d6f13b677ec2573bae139906e7b3763e1829d916ade8f",
-        "apiVersion": 1,
-        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 39916,
-        "status": 1,
-        "language": "id",
-        "authors": [
-            "duro92"
-        ],
-        "tvTypes": [
-            "TvSeries",
-            "AsianDrama"
-        ],
-        "version": 1,
-        "internalName": "Dramabox",
-        "description": "DramaBox provider via Sansekai API",
-        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Dramabox.cs3",
-        "name": "Dramabox"
-    },
-    {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://drama-id.com&size=%size%",
-        "fileHash": "sha256-b7ed1a001f8cd936fecd53c728c2c6f2974365bfe19bbc12e5026f0b33173792",
+        "fileHash": "sha256-df24fd082a4baaed4843b6969825de293167a1e894ea3d51277a9f2a8647cf0d",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 41782,
+        "fileSize": 43119,
         "status": 1,
         "language": "id",
         "authors": [
@@ -367,10 +303,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://justilien.com&size=%size%",
-        "fileHash": "sha256-486ed02843c25b0d7568d73c15fc9500ea435f774840545b7478373de34c5ea3",
+        "fileHash": "sha256-58f060c03586cfafe5a5d423389e8782a00627ca651cf9507933581ecf58e114",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 41624,
+        "fileSize": 38147,
         "status": 1,
         "language": "id",
         "authors": [
@@ -389,10 +325,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://filmapik.singles&size=%size%",
-        "fileHash": "sha256-4ffbd53287b8c7d3531cc2c548636c865af6b586a1bf30009fd4db4caf0c4687",
+        "fileHash": "sha256-fbae7b4ff70151b1e80111ea6a4c2072e5e7b8d17e48e7f1c77a25e989d0421b",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 24312,
+        "fileSize": 28573,
         "status": 1,
         "language": "id",
         "authors": [
@@ -412,10 +348,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://s3.iix.llc&size=%size%",
-        "fileHash": "sha256-53728b30642aee5fb192e6da405f8b87fe666eaa0a2eb5d8a2dcb9b70d614bc5",
+        "fileHash": "sha256-fddd9c06eb4f47aae94fe608cb615588ef2b013e3f9aaf4a9df2a96ee0590bde",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 25728,
+        "fileSize": 25724,
         "status": 1,
         "language": "id",
         "authors": [
@@ -434,10 +370,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://free-reels.com&size=%size%",
-        "fileHash": "sha256-2b90ccc5f0be43331f8bdb4b14135a52d2c0d5540796b1a1a56fb3fc574eb26b",
+        "fileHash": "sha256-282a18c68f209e63f97d11db0e460ba42876d38d1c3ac77e0242b1c439bf7613",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 71370,
+        "fileSize": 73401,
         "status": 1,
         "language": "id",
         "authors": [
@@ -455,10 +391,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://fufafilm.com&size=%size%",
-        "fileHash": "sha256-4ddecdbfa876f516056060d7b9e8c6ff91cd28e04bdae63abb1f5a0d35d3306d",
+        "fileHash": "sha256-49dae01c104440e244a19b5c5c15e158eaed067d4f31c285fdcf165dd22410e0",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 27856,
+        "fileSize": 27853,
         "status": 1,
         "language": "id",
         "authors": [
@@ -477,10 +413,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://funmovieslix.com&size=%size%",
-        "fileHash": "sha256-ce12fb217eda24d8e884aaf5c0fbfc78ef49e50b4e806cc7a555aa2bccff8e0d",
+        "fileHash": "sha256-d920bf2f48a58209a1b109ea7f6b00ef8d5893d2027090e464356e2e950c831a",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 37995,
+        "fileSize": 38653,
         "status": 1,
         "language": "id",
         "authors": [
@@ -498,10 +434,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://gojodesu.com&size=%size%",
-        "fileHash": "sha256-0931265b694e5d72cdd4398e45b4789a160f73e8984e842e5ea2d5dcc2319c04",
+        "fileHash": "sha256-662634edf2ecb676aed832463e3e0cc43d238670bb9bac9fefcb2f1dff1f8c9d",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 25433,
+        "fileSize": 25434,
         "status": 1,
         "language": "id",
         "authors": [
@@ -518,11 +454,34 @@
         "name": "GojodesuProvider"
     },
     {
-        "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://v8.hidoristream.online&size=%size%",
-        "fileHash": "sha256-a199cce70aac1d0f8fa8faab152d41c44a88dc0011a501cbcc1913ee6b2e702e",
+        "iconUrl": "https://www.google.com/s2/favicons?domain=www.huazai6.com&sz=%size%",
+        "fileHash": "sha256-028cb7ca3e51d2fdd50a1dcdfcfbaaf5bc87c9d0201de665cae3e8e96bd04981",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 49167,
+        "fileSize": 56529,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "sad25kag",
+            "BetbetMiro"
+        ],
+        "tvTypes": [
+            "Movie",
+            "TvSeries",
+            "AsianDrama"
+        ],
+        "version": 18,
+        "internalName": "GudangFilm",
+        "description": "GudangFilm provider untuk domain aktif huazai6.com dengan detail movie/series valid dan resolver playback/download dari player sumber termasuk Upload18 dengan media header source-backed.",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/GudangFilm.cs3",
+        "name": "GudangFilm"
+    },
+    {
+        "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://v8.hidoristream.online&size=%size%",
+        "fileHash": "sha256-dc7705f69a5cd2825d013ab787da3f326c6862a23c866c07dcba3117eef8f0ee",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 60680,
         "status": 1,
         "language": "id",
         "authors": [
@@ -541,10 +500,10 @@
     },
     {
         "iconUrl": "https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://idlixian.com&size=16",
-        "fileHash": "sha256-f4b090ee3bba144257940227d110a1e4dafe70603974ae684cfa4ee2c11a0224",
+        "fileHash": "sha256-5c49d6983973abbfa187cb7c1060745d5da1ac5c2e025fd5ba8130e35e1e0f55",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 39387,
+        "fileSize": 60351,
         "status": 1,
         "language": "id",
         "authors": [
@@ -583,10 +542,10 @@
     },
     {
         "iconUrl": "https://missav.ws/missav/logo-square.png",
-        "fileHash": "sha256-7c85c08b533eaf1a11ddaa8fab45ca8006f38140fad7e89111b518e12e3eeda7",
+        "fileHash": "sha256-e4b0b71509d37ffdde2c09f1dfb9141ac6e4458462e33a96542edc20b6547e60",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 22166,
+        "fileSize": 22994,
         "status": 1,
         "language": "id",
         "authors": [
@@ -603,10 +562,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://tv2.kawanfilm21.co&size=%size%",
-        "fileHash": "sha256-0c59308bf307dac4c692643daa342edcf564ecb772ecad1e08075fe38dc72973",
+        "fileHash": "sha256-ffa643173b84f9c0627080f7611c1d512cd4bf3b9d0be60349caf8c3f6f3f069",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 24727,
+        "fileSize": 24730,
         "status": 1,
         "language": "id",
         "authors": [
@@ -625,10 +584,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://sv4.kazefuri.cloud&size=%size%",
-        "fileHash": "sha256-8d784808d1a60c495b2c601ef9dc82e671a56f01b2a39624fe848df1cedc237c",
+        "fileHash": "sha256-3c2999fa645e25dad4a2de99eaac19d9ddc6801ef1beed6fed8ab0cc9c8ca076",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 41897,
+        "fileSize": 42727,
         "status": 1,
         "language": "id",
         "authors": [
@@ -646,10 +605,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://kissasian.cam&size=%size%",
-        "fileHash": "sha256-e265c4224b4bb1238b848c8b64f0feea8a036fb7b88013660ae85c7fbdae8888",
+        "fileHash": "sha256-9cafca270c37af846fa9010d06586f036adc7d341677819d0c431a11108139ee",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 30015,
+        "fileSize": 30743,
         "status": 1,
         "language": "id",
         "authors": [
@@ -668,10 +627,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://kisskh.ovh&size=%size%",
-        "fileHash": "sha256-2f2d29860d6eff62ee01f123d2d0433e6d8ec18797af7c1696255c1c8284e007",
+        "fileHash": "sha256-1450cccbab896cca042f29847379842360040792c72b5b3eb3d6a98bb8e64f43",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 30554,
+        "fileSize": 31820,
         "status": 1,
         "language": "id",
         "authors": [
@@ -689,34 +648,11 @@
         "name": "KisskhProvider"
     },
     {
-        "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://kitanonton2.guru&size=%size%",
-        "fileHash": "sha256-fb5127639a1eb86d7aa9782e9158047754ef69be2ba9e3044602da85afddeee3",
-        "apiVersion": 1,
-        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 38476,
-        "status": 1,
-        "language": "id",
-        "authors": [
-            "Duro92"
-        ],
-        "tvTypes": [
-            "Movie",
-            "TvSeries",
-            "AsianDrama",
-            "Anime"
-        ],
-        "version": 1,
-        "internalName": "KitanontonProvider",
-        "description": "Kitanonton",
-        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/KitanontonProvider.cs3",
-        "name": "KitanontonProvider"
-    },
-    {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://klikxxi.fit&size=%size%",
-        "fileHash": "sha256-cd6042d5390fe7e3c148d2fea57a6150287c108745ea6185ff7f23b5241c9c33",
+        "fileHash": "sha256-b5f48f22855d4d2526bbe805b5e407c6f96026b202a7050b68f83709692ac1a7",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 35875,
+        "fileSize": 21021,
         "status": 1,
         "language": "id",
         "authors": [
@@ -777,10 +713,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://layarasia.site&size=%size%",
-        "fileHash": "sha256-c87a0e416600cfce8bb6232dc26fa0811ab70584ce91f37dce6513a148d1b834",
+        "fileHash": "sha256-0ec0273da4e131f0c6da56663dcd02637de9b5bc529fa7eba1bae188aca90b63",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 27090,
+        "fileSize": 27084,
         "status": 1,
         "language": "id",
         "authors": [
@@ -799,10 +735,10 @@
     },
     {
         "iconUrl": "https://www.google.com/s2/favicons?domain=tv7.lk21.am.in&sz=%size%",
-        "fileHash": "sha256-4a00a19730ea530370746662a33ccd06b2bc3b3aeef46647d0548390db031c20",
+        "fileHash": "sha256-001726ae8d98f28c7fa259d39b8f8c9e37328c552065c3131fdb4b42977d6c5d",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 31369,
+        "fileSize": 32144,
         "status": 1,
         "language": "id",
         "authors": [
@@ -840,10 +776,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://melolo.com&size=%size%",
-        "fileHash": "sha256-75a32f4cbabc88613e0546c00b860878052499f08043c86ac59b020fcaae669f",
+        "fileHash": "sha256-67530906a4cae2e41bf1076a377f5539d4f36064408b1534c748202836bdf6e9",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 30776,
+        "fileSize": 32419,
         "status": 1,
         "language": "id",
         "authors": [
@@ -861,10 +797,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://tv11.melongmovies.com&size=%size%",
-        "fileHash": "sha256-18dd7ae592b3c90afa803e85aeda6fb1702412fe40ad8fa09bd926873266f64c",
+        "fileHash": "sha256-d2d51df32b0c4e27be11c4cffc03a22f74bb424142a44401269739afa3f6d376",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 22562,
+        "fileSize": 22565,
         "status": 1,
         "language": "id",
         "authors": [
@@ -880,28 +816,6 @@
         "description": "Melongmovie",
         "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Melongmovie.cs3",
         "name": "Melongmovie"
-    },
-    {
-        "iconUrl": "https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://ssstik.tv&size=16",
-        "fileHash": "sha256-43aa00a45034c77e451af8325afc2347181a82c1f871b21b18ac71017f36971a",
-        "apiVersion": 1,
-        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 32354,
-        "status": 1,
-        "language": "id",
-        "authors": [
-            "Duro92"
-        ],
-        "tvTypes": [
-            "TvSeries",
-            "Movie",
-            "Anime",
-            "AsianDrama"
-        ],
-        "version": 2,
-        "internalName": "Midasxxi",
-        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Midasxxi.cs3",
-        "name": "Midasxxi"
     },
     {
         "iconUrl": "https://missav.ws/missav/logo-square.png",
@@ -967,10 +881,10 @@
     },
     {
         "iconUrl": "https://raw.githubusercontent.com/Sushan64/NetMirror-Extension/refs/heads/master/Netmirror/logo.jpeg",
-        "fileHash": "sha256-93359970af1c466309f78dbeefbcedc504fb088f15dd85a20c5ac5c9608b10f7",
+        "fileHash": "sha256-4226abf39dd9e6982d9579cac53d2eecaa8defb9a37a8315e619327e0d84011f",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 52644,
+        "fileSize": 53516,
         "status": 1,
         "language": "id",
         "authors": [
@@ -990,10 +904,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://new18.ngefilm.site&size=%size%",
-        "fileHash": "sha256-78c6808db4216343437b2fe6d8d6f949a6d37adf6580649aa3b493d6ec5742f3",
+        "fileHash": "sha256-78f55f54d58f534542b015eb4267c2b58d7d26b0c746973ec1ac5192890bb7ee",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 23763,
+        "fileSize": 23764,
         "status": 1,
         "language": "id",
         "authors": [
@@ -1012,10 +926,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://nimegami.id&size=%size%",
-        "fileHash": "sha256-0b5af10b2d51c7bdf11b0e98a8a9a7429b0c8fb4cd04da8ac116603804264b9d",
+        "fileHash": "sha256-65fd6c474488596999dc521c405ec8ba2b6a8a148d8e3d450e3f097dbe76c6bf",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 36756,
+        "fileSize": 38053,
         "status": 1,
         "language": "id",
         "authors": [
@@ -1055,10 +969,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://s11.nontonanimeid.boats&size=%size%",
-        "fileHash": "sha256-72b743f9e07e4e1d6d85016ed94cd93586cfceb1b9bfb027b90fada3bb1bce2a",
+        "fileHash": "sha256-cd55f7202ada3735940f097870f1e247ea4d7afd08debaf0de080ef13e5d4a39",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 58169,
+        "fileSize": 59056,
         "status": 1,
         "language": "id",
         "authors": [
@@ -1122,10 +1036,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://45.11.57.243&size=%size%",
-        "fileHash": "sha256-2b445ba626a1c201ab1a14d99dbb80f3c733d7dab1e7c5956d278ff65e8d291c",
+        "fileHash": "sha256-559b8490dd50a06c1198d4c0b6faf82b25ec136bad66630fc464ac1719b01385",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 21853,
+        "fileSize": 21910,
         "status": 1,
         "language": "id",
         "authors": [
@@ -1144,10 +1058,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://otakudesu.cloud&size=%size%",
-        "fileHash": "sha256-c1773279db49af5e6c9eabeacb51d51a71e8cff825ad62a58ef05a298af53ad2",
+        "fileHash": "sha256-fba709f51421c57232a04098206eafb05d36702989cfc8de06f7b6d4217b0ff8",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 24745,
+        "fileSize": 25749,
         "status": 1,
         "language": "id",
         "authors": [
@@ -1207,10 +1121,10 @@
     },
     {
         "iconUrl": "https://podjav.tv/wp-content/uploads/2025/02/favicon-podjav.ico",
-        "fileHash": "sha256-8ffa9aa5283ee2b75b3c8542b3871bd378e8619c9edbf7c2f5dce16150afe5b3",
+        "fileHash": "sha256-6f6ead90bc4984069474ebb88540581cd5e95e36ee5cc915f4e757497ff30c3d",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 20010,
+        "fileSize": 21144,
         "status": 1,
         "language": "id",
         "authors": [
@@ -1227,10 +1141,10 @@
     },
     {
         "iconUrl": "https://www.pornhub.com/favicon.ico",
-        "fileHash": "sha256-24b7245be5b3be1b4a97a8693fcd0799de5273f5c5f5a886fd45cff54747cd71",
+        "fileHash": "sha256-41848aaa748cded61a405bb80c1477f9c755c40ba5e63a2bffece0d2330b2428",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 17314,
+        "fileSize": 18539,
         "status": 1,
         "language": "en",
         "authors": [
@@ -1247,10 +1161,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://v3.pusatfilm21info.com&size=%size%",
-        "fileHash": "sha256-ccfeaf3798222c07c5d5aca449982eea32092888336d3fb64594cac1a36b5f1b",
+        "fileHash": "sha256-d9f671cd2d71549f51d5f1c88be9ce21c2a412e79e7d6d5c3188f831cd22f92f",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 30967,
+        "fileSize": 30972,
         "status": 1,
         "language": "id",
         "authors": [
@@ -1291,10 +1205,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://sflix.film&size=%size%",
-        "fileHash": "sha256-cc490b3fa01f56572b6ef81d1af8fe8cbbee026fa7d29f99be30cd7e8ec094d9",
+        "fileHash": "sha256-7a5b0455866f8bf1592ff04b761fb12ed18a5f5317cd53829cc8023618c567dd",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 35669,
+        "fileSize": 36366,
         "status": 1,
         "language": "id",
         "authors": [
@@ -1337,10 +1251,10 @@
     },
     {
         "iconUrl": "https://github.com/duro92/ExtCloud/blob/main/SoraStream/Icon.png",
-        "fileHash": "sha256-1a68090cb44ad9c019b1ba64b28d7b6d65f5bcf33ae92a502c5844e7e4c2dd85",
+        "fileHash": "sha256-899ea34db281f17798e7fcfd0c17d7bbf7b12b7e14b403a306a72dfb4ede3961",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 283943,
+        "fileSize": 181611,
         "status": 1,
         "language": "en",
         "authors": [
@@ -1360,11 +1274,32 @@
         "name": "SoraStream"
     },
     {
-        "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://winbu.net&size=%size%",
-        "fileHash": "sha256-0663a033c92ea031bec14ab557354deeac55d566f9ce9c8638a6f0cdc47ee74b",
+        "iconUrl": "https://www.google.com/s2/favicons?domain=162.244.95.227&sz=%size%",
+        "fileHash": "sha256-4eb7dd3193b5817aeecf492bc224855ee2b6b7a8b707358ee2b389847a74839c",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 32843,
+        "fileSize": 46108,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "sad25kag"
+        ],
+        "tvTypes": [
+            "Movie",
+            "TvSeries"
+        ],
+        "version": 6,
+        "internalName": "Terbit21",
+        "description": "Terbit21 - source movie dan tv series Indonesia berbasis evidence HAR",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Terbit21.cs3",
+        "name": "Terbit21"
+    },
+    {
+        "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://winbu.net&size=%size%",
+        "fileHash": "sha256-2e6536d45d2241e8dd5d1671d2ae5f7571c242aa0c0b7f43ff7229f15da7f60c",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 33574,
         "status": 1,
         "language": "id",
         "authors": [
@@ -1403,10 +1338,10 @@
     },
     {
         "iconUrl": "https://yflix.to/favicon.ico",
-        "fileHash": "sha256-a99117e09d385a2c81665f79fce13dcef4061c2e046a050121b4762bf3fd75ca",
+        "fileHash": "sha256-11f3411baff73502f1c6b8686bd9f581885b21c2fb5b4e2bb533c0f2b9ac7e9e",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 52781,
+        "fileSize": 54057,
         "status": 1,
         "language": "en",
         "authors": [
@@ -1424,7 +1359,7 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://zoronime.online&size=%size%",
-        "fileHash": "sha256-53c83987dca1e12076b5cd67ce3ba37e9c7eb99fc28b332be98019fbf94ab690",
+        "fileHash": "sha256-774c4ed890469cc263a9b9162d1df99104b92e8bb0dc7dedcc1497aab7f91b5a",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
         "fileSize": 38388,
