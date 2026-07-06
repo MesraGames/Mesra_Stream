@@ -1,3 +1,4 @@
+@file:Suppress("OPT_IN_USAGE", "OPT_IN_USAGE_ERROR")
 package com.hexated
 
 import com.lagradost.cloudstream3.*
