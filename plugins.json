@@ -88,10 +88,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://anoboy.be&size=%size%",
-        "fileHash": "sha256-b9a82d00d1c60ba32c31724e70bf1116d3619224192806ab82a7f4e8ce15f164",
+        "fileHash": "sha256-e3a0d3008da4a89afdd09dadd7df5fe62ec21cbe4857508afa2bde8d81565495",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 58236,
+        "fileSize": 54637,
         "status": 1,
         "language": "id",
         "authors": [
@@ -150,6 +150,27 @@
         "description": "AutoEmbed TMDB-backed movie and TV catalog provider",
         "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/AutoEmbedProvider.cs3",
         "name": "AutoEmbedProvider"
+    },
+    {
+        "iconUrl": "https://ayononton.live/wp-content/themes/muvipro/images/favicon/96x96.png",
+        "fileHash": "sha256-92f4264cab752dc31f4b05ccadeaa087a4835493dca7329087e1e15f743def4e",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 51659,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "RavenX"
+        ],
+        "tvTypes": [
+            "Movie",
+            "TvSeries"
+        ],
+        "version": 14,
+        "internalName": "AyoNonton",
+        "description": "AyoNonton provider \u2014 evidence-based categories and HAR-aligned t21.press 540.php playback resolver",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/AyoNonton.cs3",
+        "name": "AyoNonton"
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://azmovies.to&size=%size%",
@@ -1429,10 +1450,10 @@
     },
     {
         "iconUrl": "https://github.com/duro92/ExtCloud/blob/main/SoraStream/Icon.png",
-        "fileHash": "sha256-899ea34db281f17798e7fcfd0c17d7bbf7b12b7e14b403a306a72dfb4ede3961",
+        "fileHash": "sha256-d16c6392106f050c11dbb446d4c434c52e13445bd51e9efc5c62d9d7d2c70b8a",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 181611,
+        "fileSize": 181807,
         "status": 1,
         "language": "en",
         "authors": [
