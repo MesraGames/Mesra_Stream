@@ -234,6 +234,28 @@
         "name": "CinemacityProvider"
     },
     {
+        "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://donghuaid.live/&size=%size%",
+        "fileHash": "sha256-58e34688a73cfcb7b19ecbafbbcebbf9e496b3ce2af9259875625c272409c469",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 60163,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "RavenX"
+        ],
+        "tvTypes": [
+            "Anime",
+            "AnimeMovie",
+            "OVA"
+        ],
+        "version": 15,
+        "internalName": "DonghuaID",
+        "description": "DonghuaID - Download dan streaming donghua subtitle Indonesia",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/DonghuaID.cs3",
+        "name": "DonghuaID"
+    },
+    {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://donghub.vip&size=%size%",
         "fileHash": "sha256-101455e5ff9f27b77928538e11f74f96eab1edab621d603c6ec8fa9b0e85b617",
         "apiVersion": 1,
@@ -348,6 +370,28 @@
         "name": "DubbindoProvider"
     },
     {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=207.180.246.102&sz=%size%",
+        "fileHash": "sha256-c797f714278c8a6b5737bc18846551054d21f28898fc51fa29127361b45d84e2",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 46910,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "RavenX"
+        ],
+        "tvTypes": [
+            "Movie",
+            "TvSeries",
+            "AsianDrama"
+        ],
+        "version": 6,
+        "internalName": "DuniaFilm21",
+        "description": "DuniaFilm21 \u2014 source HAR-verified untuk movie LK21/Dunia21 dari 207.180.246.102 dengan homepage, genre, detail, resolver Minochinos/Morencius HLS, gdriveplayer multi-domain, dan encoded HLS player.",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/DuniaFilm21.cs3",
+        "name": "DuniaFilm21"
+    },
+    {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://justilien.com&size=%size%",
         "fileHash": "sha256-58f060c03586cfafe5a5d423389e8782a00627ca651cf9507933581ecf58e114",
         "apiVersion": 1,
@@ -368,6 +412,28 @@
         "description": "DutaMovie",
         "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Dutamovie.cs3",
         "name": "Dutamovie"
+    },
+    {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=tv13.filem21.net&sz=%size%",
+        "fileHash": "sha256-26da714c37169bc3d8a90c653871675381ec64ac118f70ac8c8334b407d7d8c7",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 42112,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "RavenX"
+        ],
+        "tvTypes": [
+            "Movie",
+            "TvSeries",
+            "AsianDrama"
+        ],
+        "version": 5,
+        "internalName": "Film21",
+        "description": "Film21 provider evidence-based dari tv13.filem21.net dengan homepage/category cards, search, detail movie/series, episode parser, dan playback resolver untuk Muvipro AJAX player tabs, iframe/player/direct media dari HAR/source aktif.",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Film21.cs3",
+        "name": "Film21"
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://filmapik.singles&size=%size%",
