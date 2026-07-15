@@ -1,12 +1,12 @@
-package com.sad25kag.anoboy
+package com.RavenX.ayononton
 
 import android.content.Context
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 
 @CloudstreamPlugin
-class AnoboyPlugin : Plugin() {
+class AyoNontonPlugin : Plugin() {
     override fun load(context: Context) {
-        registerMainAPI(Anoboy())
+        registerMainAPI(AyoNonton())
     }
 }
