@@ -13,8 +13,8 @@ class LayarKacaProvider : MainAPI() {
     companion object {
         var context: android.content.Context? = null
     }
-    override var mainUrl = "https://lk21.de"
-    private var seriesUrl = "https://series.lk21.de"
+    override var mainUrl = "https://Lk21.de"
+    private var seriesUrl = "https://tv12.lk21official.cc"
     private var searchurl= "https://gudangvape.com"
 
     override var name = "LayarKaca🎞"
