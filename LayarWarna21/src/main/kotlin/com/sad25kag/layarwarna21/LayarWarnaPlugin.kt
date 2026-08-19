@@ -1,17 +1,19 @@
-package com.sad25kag.layarwarna21
+package com.layarwarna
 
-import com.lagradost.cloudstream3.plugins.BasePlugin
+import android.content.Context
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
+import com.lagradost.cloudstream3.plugins.Plugin
 
 @CloudstreamPlugin
-class LayarWarna21Plugin : BasePlugin() {
-    override fun load() {
-        registerMainAPI(LayarWarna21())
+class LayarWarnaPlugin : Plugin() {
+    override fun load(context: Context) {
+        registerMainAPI(LayarWarna())
         registerExtractorAPI(Dingtezuni())
         registerExtractorAPI(Movearnpre())
         registerExtractorAPI(Mivalyo())
         registerExtractorAPI(Bingezove())
         registerExtractorAPI(Ryderjet())
+		registerExtractorAPI (Morencius())
         registerExtractorAPI(Ghbrisk())
         registerExtractorAPI(Hglink())
         registerExtractorAPI(Dhcplay())

@@ -1,4 +1,4 @@
-package com.sad25kag.layarwarna21
+package com.layarwarna
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.extractors.StreamWishExtractor
 import com.lagradost.cloudstream3.extractors.VidStack
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
+import java.net.URI
 
 open class Dingtezuni : ExtractorApi() {
     override val name = "Earnvids"
@@ -68,6 +69,11 @@ class Ryderjet : Dingtezuni() {
     override var mainUrl = "https://ryderjet.com"
 }
 
+class Morencius : Dingtezuni() {
+    override var name = "Morencius"
+    override var mainUrl = "https://morencius.com"
+}
+
 class Bingezove : Dingtezuni() {
     override var name = "Earnvids"
     override var mainUrl = "https://bingezove.com"
@@ -85,18 +91,18 @@ open class Gofile : ExtractorApi() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val id = Regex("/(?:\\?c=|d/)([\\da-zA-Z-]+)").find(url)?.groupValues?.get(1) ?: return
-        val token = app.get("$mainApi/createAccount").parsedSafe<Account>()?.data?.get("token") ?: return
+        val id = Regex("/(?:\\?c=|d/)([\\da-zA-Z-]+)").find(url)?.groupValues?.get(1)
+        val token = app.get("$mainApi/createAccount").parsedSafe<Account>()?.data?.get("token")
         val websiteToken = app.get("$mainUrl/dist/js/alljs.js").text.let {
             Regex("fetchData.wt\\s*=\\s*\"([^\"]+)").find(it)?.groupValues?.get(1)
-        } ?: return
+        }
 
         app.get("$mainApi/getContent?contentId=$id&token=$token&wt=$websiteToken")
-            .parsedSafe<Source>()?.data?.contents?.forEach { entry ->
-                val link = entry.value["link"] ?: return@forEach
+            .parsedSafe<Source>()?.data?.contents?.forEach {
+                val link = it.value["link"] ?: return@forEach
                 callback(
                     newExtractorLink(name, name, link) {
-                        this.quality = getQuality(entry.value["name"])
+                        this.quality = getQuality(it.value["name"])
                         this.headers = mapOf("Cookie" to "accountToken=$token")
                     }
                 )
