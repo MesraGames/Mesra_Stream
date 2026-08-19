@@ -1,9 +1,9 @@
 // use an integer for version numbers
-version = 22
+version = 9
 
 
 cloudstream {
-    language = "id"
+    language = "en"
     // All of these properties are optional, you can safely remove them
 
     // description = "Lorem Ipsum"
@@ -24,5 +24,5 @@ cloudstream {
         "AsianDrama",
     )
 
-    iconUrl = "https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://idlixian.com&size=16"
+    iconUrl = "https://moviebox.ph/favicon.ico"
 }
