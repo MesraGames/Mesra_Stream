@@ -633,10 +633,10 @@
     },
     {
         "iconUrl": "https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://idlixian.com&size=16",
-        "fileHash": "sha256-5c49d6983973abbfa187cb7c1060745d5da1ac5c2e025fd5ba8130e35e1e0f55",
+        "fileHash": "sha256-1d1bf14786e4bad32164923c275b1db88d7064c354fe5e5a0329bebd2cbd7ddc",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 60351,
+        "fileSize": 46537,
         "status": 1,
         "language": "id",
         "authors": [
@@ -648,7 +648,7 @@
             "Anime",
             "AsianDrama"
         ],
-        "version": 6,
+        "version": 22,
         "internalName": "IdlixProvider",
         "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/IdlixProvider.cs3",
         "name": "IdlixProvider"
@@ -991,25 +991,26 @@
         "name": "MissAv"
     },
     {
-        "iconUrl": "https://github.com/NivinCNC/CNCVerse-Cloud-Stream-Extension/raw/refs/heads/master/MovieBoxProvider/icon.png",
-        "fileHash": "sha256-bb83ddaca917a3ea375a7af0c2bc2d9d74b1bd5ca75a40891efcde1ef9dc1500",
+        "iconUrl": "https://moviebox.ph/favicon.ico",
+        "fileHash": "sha256-af0c123ce450a6357ce7a2d2586ad25188d6f5145d3ef71de559ec433d9ef75a",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 38420,
+        "fileSize": 31524,
         "status": 1,
-        "language": "id",
+        "language": "en",
         "authors": [
-            "NivinCNC,Phisher98"
+            "Hexated"
         ],
         "tvTypes": [
+            "TvSeries",
             "Movie",
-            "TvSeries"
+            "Anime",
+            "AsianDrama"
         ],
-        "version": 12,
-        "internalName": "MovieBoxProvider",
-        "description": "Multi Language Movies and Series Provider",
-        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/MovieBoxProvider.cs3",
-        "name": "MovieBoxProvider"
+        "version": 9,
+        "internalName": "Moviebox",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Moviebox.cs3",
+        "name": "Moviebox"
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://nekokun.my.id&size=%size%",
