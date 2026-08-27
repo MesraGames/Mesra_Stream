@@ -1383,6 +1383,28 @@
         "name": "Pornhub"
     },
     {
+        "fileHash": "sha256-b25be9d1b8214e82ae21bfea971d5cee0f369e2a0976458f5a72f86103f04fca",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 41400,
+        "status": 3,
+        "language": "id",
+        "authors": [
+            "sad25kag"
+        ],
+        "tvTypes": [
+            "AsianDrama",
+            "TvSeries",
+            "Movie",
+            "Anime"
+        ],
+        "version": 8,
+        "internalName": "Pusatfilm",
+        "description": "PusatFilm - Streaming Movie and TV Series",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Pusatfilm.cs3",
+        "name": "Pusatfilm"
+    },
+    {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://saikonime.ink&size=%size%",
         "fileHash": "sha256-d8648d83d7e3d1e750e2a6e63988baf8de461615fe070fff3b172015e8170348",
         "apiVersion": 1,
