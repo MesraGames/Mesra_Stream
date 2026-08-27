@@ -1,14 +1,13 @@
-
-package com.hexated
+package com.cinemax21
 
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
 
 @CloudstreamPlugin
-class IdlixProviderPlugin: Plugin() {
+class Cinemax21ProviderPlugin : Plugin() {
     override fun load(context: Context) {
-        // All providers should be added in this manner. Please don't edit the providers list directly.
-        registerMainAPI(IdlixProvider())
+        registerMainAPI(Cinemax21Provider())
+        registerExtractorAPI(Jeniusplay())
     }
 }
