@@ -234,6 +234,28 @@
         "name": "CinemacityProvider"
     },
     {
+        "iconUrl": "https://klikxxi.me/wp-content/uploads/2024/02/cropped-site-icon.png",
+        "fileHash": "sha256-b83b63b8b32670228ab4752d1ba18b660b71d8eb9331333e94c862a4f2094234",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
+        "fileSize": 241073,
+        "status": 1,
+        "language": "id",
+        "authors": [
+            "Miku"
+        ],
+        "tvTypes": [
+            "AsianDrama",
+            "TvSeries",
+            "Movie"
+        ],
+        "version": 2,
+        "internalName": "Cinemax21Provider",
+        "description": "CineMax21 \u2014 Streaming Movie and TV Series",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Cinemax21Provider.cs3",
+        "name": "Cinemax21Provider"
+    },
+    {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://donghuaid.live/&size=%size%",
         "fileHash": "sha256-58e34688a73cfcb7b19ecbafbbcebbf9e496b3ce2af9259875625c272409c469",
         "apiVersion": 1,
@@ -633,25 +655,28 @@
     },
     {
         "iconUrl": "https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://idlixian.com&size=16",
-        "fileHash": "sha256-1d1bf14786e4bad32164923c275b1db88d7064c354fe5e5a0329bebd2cbd7ddc",
+        "jarFileSize": 193613,
+        "fileHash": "sha256-36e198bce7d1d971af02baf784f34aa0ffb4992556392b2939d1ad5e51767e4e",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 46537,
+        "fileSize": 49048,
         "status": 1,
         "language": "id",
         "authors": [
-            "Hexated"
+            "Miku"
         ],
         "tvTypes": [
             "TvSeries",
             "Movie",
-            "Anime",
             "AsianDrama"
         ],
-        "version": 22,
+        "version": 3,
         "internalName": "IdlixProvider",
+        "jarUrl": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/IdlixProvider.jar",
+        "description": "Idlix \u2014 Streaming Movie and TV Series",
         "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/IdlixProvider.cs3",
-        "name": "IdlixProvider"
+        "name": "IdlixProvider",
+        "jarHash": "sha256-56319c6ae4f4a35cef4b8fc5d1445d7d384bcd7019873451968cecce98903567"
     },
     {
         "iconUrl": "https://homecookingrocks.com/wp-content/uploads/2024/10/cropped-indomax21-favicon-color-1.png",
@@ -695,10 +720,10 @@
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://tv2.kawanfilm21.co&size=%size%",
-        "fileHash": "sha256-ffa643173b84f9c0627080f7611c1d512cd4bf3b9d0be60349caf8c3f6f3f069",
+        "fileHash": "sha256-8c40b3cb053472646a066076ceaa28a94998f61e1426f33ae094224e8bbed39e",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 24730,
+        "fileSize": 30414,
         "status": 1,
         "language": "id",
         "authors": [
@@ -889,10 +914,10 @@
     },
     {
         "iconUrl": "https://www.google.com/s2/favicons?domain=hisgloryco.com&sz=%size%",
-        "fileHash": "sha256-619bf6b473e0f85e46abcec552fe0980703557ca335e7a797f325a8b4f96d899",
+        "fileHash": "sha256-7abd143367c5ad5c3c297d0c626f23057ca85c7fb3ca4883efa9ed11616cadc6",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 35158,
+        "fileSize": 27224,
         "status": 1,
         "language": "id",
         "authors": [
@@ -1358,28 +1383,6 @@
         "name": "Pornhub"
     },
     {
-        "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://v3.pusatfilm21info.com&size=%size%",
-        "fileHash": "sha256-d9f671cd2d71549f51d5f1c88be9ce21c2a412e79e7d6d5c3188f831cd22f92f",
-        "apiVersion": 1,
-        "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 30972,
-        "status": 1,
-        "language": "id",
-        "authors": [
-            "Duro92"
-        ],
-        "tvTypes": [
-            "AsianDrama",
-            "TvSeries",
-            "Movie"
-        ],
-        "version": 1,
-        "internalName": "Pusatfilm21Provider",
-        "description": "Pusatfilm21",
-        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Pusatfilm21Provider.cs3",
-        "name": "Pusatfilm21Provider"
-    },
-    {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://saikonime.ink&size=%size%",
         "fileHash": "sha256-d8648d83d7e3d1e750e2a6e63988baf8de461615fe070fff3b172015e8170348",
         "apiVersion": 1,
@@ -1445,29 +1448,25 @@
         "name": "SarangFilm21"
     },
     {
-        "iconUrl": "https://www.google.com/s2/favicons?domain=new13.savefilm21info.com&sz=%size%",
-        "jarFileSize": 109179,
-        "fileHash": "sha256-54a86dc5efb9c7e3a273048c3fed188b74798c0240ee303c8cc6ddc4f726b5b5",
+        "fileHash": "sha256-110572b5276b3cac0f42f1cc10774750e5eb3a34b43deed2babe80fe8cb3578b",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/MesraGames/Mesra_Stream",
-        "fileSize": 36206,
+        "fileSize": 24449,
         "status": 1,
         "language": "id",
         "authors": [
-            "RavenX"
+            "Asm0d3usX"
         ],
         "tvTypes": [
             "Movie",
             "TvSeries",
             "AsianDrama"
         ],
-        "version": 4,
-        "internalName": "SaveFilm21",
-        "jarUrl": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/SaveFilm21.jar",
-        "description": "SaveFilm21 provider untuk streaming film dan series subtitle Indonesia dari new13.savefilm21info.com. Parser dibuat evidence-based dari source aktif dengan homepage/category cards, detail movie/series, multi-server playback (sf21.vidplayer.live, sf21.rpmvid.com), dan episode navigator via /eps/ path.",
-        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/SaveFilm21.cs3",
-        "name": "SaveFilm21",
-        "jarHash": "sha256-84a9f8be6a10b7a9779d6bdd64ab18b9e02c5e9c7452724998a54d227e87d144"
+        "version": 1,
+        "internalName": "Savefilm",
+        "description": "Savefilm - Streaming Movie and TV Series",
+        "url": "https://raw.githubusercontent.com/MesraGames/Mesra_Stream/builds/Savefilm.cs3",
+        "name": "Savefilm"
     },
     {
         "iconUrl": "https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://sflix.film&size=%size%",
