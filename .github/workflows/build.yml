@@ -1,46 +1,103 @@
-name: Build
-
-# https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#concurrency
-concurrency:
-  group: "build"
-  cancel-in-progress: true
-
-permissions:
-  contents: write
+name: Auto Sync and Build Extensions
 
 on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
   push:
     branches:
-      # choose your default branch
       - main
     paths-ignore:
       - "*.md"
 
+permissions:
+  contents: write
+
 jobs:
-  build:
+  sync-and-build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4.2.2
+      - name: Checkout source (main branch)
+        uses: actions/checkout@v4
         with:
-          path: "src"
+          path: src
+          fetch-depth: 0
+
+      - name: Checkout builds branch
+        uses: actions/checkout@v4
+        with:
+          ref: builds
+          path: builds
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Run sync script
+        run: |
+          cd src
+          python sync_extensions.py
+
+      - name: Check for source changes
+        id: source-changes
+        run: |
+          cd src
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          
+          # Get list of changed plugins before staging
+          changed_plugins=$(git status --porcelain | awk '{print $2}' | cut -d'/' -f1 | grep -v -E "^\." | grep -v -E "^(sync_extensions\.py|phisher_plugins\.txt|phisher_commit\.txt|build\.gradle\.kts|settings\.gradle\.kts|gradle\.properties|gradlew|gradlew\.bat|repo\.json|README\.md)$" | sort -u | tr '\n' ',' | sed 's/,$//')
+          
+          # Check if Phisher commit in src differs from the one recorded in builds branch
+          src_phisher=$(cat phisher_commit.txt 2>/dev/null | tr -d '[:space:]' || echo "")
+          build_phisher=$(cat $GITHUB_WORKSPACE/builds/phisher_commit.txt 2>/dev/null | tr -d '[:space:]' || echo "")
+          phisher_outdated=false
+          if [ -n "$src_phisher" ] && [ "$src_phisher" != "$build_phisher" ]; then
+            echo "Builds branch phisher commit ($build_phisher) differs from src ($src_phisher). Build required."
+            phisher_outdated=true
+          fi
+          
+          git add -A
+          
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Changes detected in source files."
+            
+            if [ -n "$changed_plugins" ]; then
+              commit_msg="Auto-sync: Update plugins ($changed_plugins)"
+            else
+              commit_msg="Auto-sync: Update core repository configuration"
+            fi
+            
+            git commit -m "$commit_msg"
+            git push origin main
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "plugins=$changed_plugins" >> $GITHUB_OUTPUT
+          elif [ "$phisher_outdated" = "true" ]; then
+            echo "No source changes in main, but builds branch is out of date."
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "plugins=" >> $GITHUB_OUTPUT
+          else
+            echo "No source changes detected and builds branch is up to date."
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Setup JDK 21
-        uses: actions/setup-java@v4.6.0
+        if: steps.source-changes.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+        uses: actions/setup-java@v4
         with:
-          distribution: "adopt"
+          distribution: temurin
           java-version: 21
+          cache: 'gradle'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3.2.2
-        with:
-          cmdline-tools-version: '12.0'
-          packages: ''
+        if: steps.source-changes.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+        uses: android-actions/setup-android@v4
 
-      - name: Access Secrets
+      - name: Create local.properties with secrets
+        if: steps.source-changes.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         env:
-          BSTATION_COOKIE: ${{ secrets.BSTATION_COOKIE }}
-          DRAKORID_COOKIE: ${{ secrets.DRAKORID_COOKIE }}
           CRUNCHYROLL_BASIC_TOKEN: ${{ secrets.CRUNCHYROLL_BASIC_TOKEN }}
           CRUNCHYROLL_REFRESH_TOKEN: ${{ secrets.CRUNCHYROLL_REFRESH_TOKEN }}
           ANICHI_API: ${{ secrets.ANICHI_API }}
@@ -56,75 +113,99 @@ jobs:
           SUPERSTREAM_THIRD_API: ${{ secrets.SUPERSTREAM_THIRD_API }}
           SUPERSTREAM_FOURTH_API: ${{ secrets.SUPERSTREAM_FOURTH_API }}
         run: |
-          cd $GITHUB_WORKSPACE/src
-          if [ -n "$BSTATION_COOKIE" ]; then
-            if [ -d "BstationProvider" ]; then
-              printf '%s' "$BSTATION_COOKIE" > BstationProvider/.bstation.cookies
-            else
-              echo "Warning: BstationProvider directory not found, skipping BSTATION_COOKIE"
-            fi
-          fi
-          if [ -n "$DRAKORID_COOKIE" ]; then
-            if [ -d "DrakoridProvider" ]; then
-              printf '%s' "$DRAKORID_COOKIE" > DrakoridProvider/.drakorid.cookies
-            else
-              echo "Warning: DrakoridProvider directory not found, skipping DRAKORID_COOKIE"
-            fi
-          fi
+          cd src
+          touch local.properties
           echo TMDB_API=${{ secrets.TMDB_API }} >> local.properties
           echo DUMP_API=${{ secrets.DUMP_API }} >> local.properties
           echo DUMP_KEY=${{ secrets.DUMP_KEY }} >> local.properties
           echo FanCode_API=${{ secrets.FanCode_API }} >> local.properties
           echo FlixHQAPI=${{ secrets.FlixHQAPI }} >> local.properties
+          
           echo CRUNCHYROLL_BASIC_TOKEN=$CRUNCHYROLL_BASIC_TOKEN >> local.properties
           echo CRUNCHYROLL_REFRESH_TOKEN=$CRUNCHYROLL_REFRESH_TOKEN >> local.properties
+          
           echo ANICHI_API=$ANICHI_API >> local.properties
           echo ANICHI_SERVER=$ANICHI_SERVER >> local.properties
           echo ANICHI_ENDPOINT=$ANICHI_ENDPOINT >> local.properties
           echo ANICHI_APP=$ANICHI_APP >> local.properties
+          
           echo ZSHOW_API=$ZSHOW_API >> local.properties
           echo SFMOVIES_API=$SFMOVIES_API >> local.properties
           echo CINEMATV_API=$CINEMATV_API >> local.properties
           echo GHOSTX_API=$GHOSTX_API >> local.properties
+          
           echo SUPERSTREAM_FIRST_API=$SUPERSTREAM_FIRST_API >> local.properties
           echo SUPERSTREAM_SECOND_API=$SUPERSTREAM_SECOND_API >> local.properties
           echo SUPERSTREAM_THIRD_API=$SUPERSTREAM_THIRD_API >> local.properties
           echo SUPERSTREAM_FOURTH_API=$SUPERSTREAM_FOURTH_API >> local.properties
 
       - name: Build Plugins
+        if: steps.source-changes.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         run: |
-          cd $GITHUB_WORKSPACE/src
+          cd src
           chmod +x gradlew
-          ./gradlew make makePluginsJson
-          mkdir -p $GITHUB_WORKSPACE/artifacts
-          find . -type f -path "*/build/*.cs3" -exec cp -f {} $GITHUB_WORKSPACE/artifacts \;
-          cp -f build/plugins.json $GITHUB_WORKSPACE/artifacts/plugins.json
-
-      - name: Push builds
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+          # Debug: run compilation for UltimaBackup and log it
+          ./gradlew :UltimaBackup:make > $GITHUB_WORKSPACE/builds/ultima_build.log 2>&1 || true
+          
+          # Run custom build python script:
+          python build_plugins.py $GITHUB_WORKSPACE/builds
+          
+      - name: Push builds and Purge CDN Cache
+        if: steps.source-changes.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         run: |
-          mkdir -p $GITHUB_WORKSPACE/builds-branch
-          cd $GITHUB_WORKSPACE/builds-branch
-
-          git init
-          git config user.email "actions@github.com"
-          git config user.name "GitHub Actions"
-
-          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git fetch origin builds || true
-
-          if git show-ref --verify --quiet refs/remotes/origin/builds; then
-            git checkout -B builds origin/builds
+          cd $GITHUB_WORKSPACE/builds
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          
+          # Ganti @builds dengan @build-${{ github.run_number }} pada manifest agar CDN jsDelivr selalu mengunduh biner segar tanpa cache
+          sed -i "s|@builds|@build-${{ github.run_number }}|g" plugins-jsdelivr.json
+          sed -i "s|@builds|@build-${{ github.run_number }}|g" repo-jsdelivr.json
+          
+          git add -A
+          
+          plugins_list="${{ steps.source-changes.outputs.plugins }}"
+          if [ -n "$plugins_list" ]; then
+            commit_msg="Auto-build: Update plugins ($plugins_list) (build-${{ github.run_number }})"
           else
-            git checkout --orphan builds
+            commit_msg="Auto-build: Update plugins (build-${{ github.run_number }})"
           fi
+          
+          git commit -m "$commit_msg" || true
+          
+          # Force push ke branch builds untuk menghindari konflik merge akibat perubahan riwayat (diverged history)
+          git push origin HEAD:builds --force
+          
+          # Buat dan push git tag untuk versi rilis ini (force push tag agar aman)
+          git tag "build-${{ github.run_number }}" --force
+          git push origin "build-${{ github.run_number }}" --force
+          
+          # Hubungkan ke remote dan bersihkan tag lama (sisakan 5 terbaru)
+          git fetch --tags
+          OLD_TAGS=$(git tag -l "build-*" --sort=creatordate | head -n -5)
+          for tag in $OLD_TAGS; do
+            echo "Deleting old tag: $tag"
+            git tag -d "$tag" || true
+            git push origin :refs/tags/$tag || true
+          done
 
-          # Clean branch working tree, then add fresh artifacts
-          git rm -r --ignore-unmatch .
-          cp -f $GITHUB_WORKSPACE/artifacts/*.cs3 .
-          cp -f $GITHUB_WORKSPACE/artifacts/plugins.json ./plugins.json
-          git add .
-
-          git commit -m "Build $GITHUB_SHA" || exit 0   # do not error if nothing to commit
-          git push --force origin builds
+          
+          # Purge semua file manifest/index di branch builds
+          echo "Purging manifest files..."
+          curl -s "https://purge.jsdelivr.net/gh/xr3ed/xr3ed-Repo@builds/repo.json"
+          curl -s "https://purge.jsdelivr.net/gh/xr3ed/xr3ed-Repo@builds/repo-jsdelivr.json"
+          curl -s "https://purge.jsdelivr.net/gh/xr3ed/xr3ed-Repo@builds/xr3ed-jsdelivr.json"
+          curl -s "https://purge.jsdelivr.net/gh/xr3ed/xr3ed-Repo@builds/plugins.json"
+          curl -s "https://purge.jsdelivr.net/gh/xr3ed/xr3ed-Repo@builds/plugins-jsdelivr.json"
+          echo ""
+          
+          # Purge SEMUA file cs3 yang ada di builds branch agar tidak ada stale cache
+          echo "Purging all cs3 files..."
+          for cs3file in $(git ls-files "*.cs3"); do
+            clean=$(basename "$cs3file")
+            echo "Purging: $clean"
+            curl -s "https://purge.jsdelivr.net/gh/xr3ed/xr3ed-Repo@builds/$clean"
+            echo ""
+          done
+          
+          echo "All purges completed!"
