@@ -33,6 +33,9 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3.2.2
+        with:
+          cmdline-tools-version: '12.0'
+          packages: ''
 
       - name: Access Secrets
         env:
