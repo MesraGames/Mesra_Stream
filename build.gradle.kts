@@ -1,4 +1,4 @@
-import com.android.build.gradle.BaseExtension
+import com.android.build.api.dsl.LibraryExtension
 import com.lagradost.cloudstream3.gradle.CloudstreamExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
@@ -6,72 +6,57 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 buildscript {
     repositories {
         google()
-        // Fallback mirror for Maven Central. Some CI networks get HTTP 403 from `repo.maven.apache.org`.
-        maven("https://maven-central.storage-download.googleapis.com/maven2")
         mavenCentral()
         maven("https://jitpack.io")
     }
 
-    configurations.classpath {
-        resolutionStrategy {
-            // Avoid flaky JitPack metadata fetch for jadb:master-SNAPSHOT in CI.
-            force("com.github.vidstige:jadb:1.2.1")
-        }
-    }
-
     dependencies {
-        classpath("com.android.tools.build:gradle:8.13.2")
-        // JitPack now publishes this plugin under the generic snapshot coordinate.
-        classpath("com.github.recloudstream:gradle:-SNAPSHOT")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.0")
+        classpath("com.android.tools.build:gradle:9.1.1")
+        classpath("com.github.recloudstream:gradle:81b1d424d2")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.20")
     }
 }
 
 allprojects {
     repositories {
         google()
-        // Fallback mirror for Maven Central. Some CI networks get HTTP 403 from `repo.maven.apache.org`.
-        maven("https://maven-central.storage-download.googleapis.com/maven2")
         mavenCentral()
         maven("https://jitpack.io")
     }
 }
 
+fun Project.cloudstream(configuration: CloudstreamExtension.() -> Unit) =
+    extensions.getByType<CloudstreamExtension>().configuration()
 
-fun Project.cloudstream(configuration: CloudstreamExtension.() -> Unit) = extensions.getByName<CloudstreamExtension>("cloudstream").configuration()
-
-fun Project.android(configuration: BaseExtension.() -> Unit) = extensions.getByName<BaseExtension>("android").configuration()
+fun Project.android(configuration: LibraryExtension.() -> Unit) =
+    extensions.getByType<LibraryExtension>().configuration()
 
 subprojects {
     apply(plugin = "com.android.library")
-    apply(plugin = "kotlin-android")
     apply(plugin = "com.lagradost.cloudstream3.gradle")
 
     cloudstream {
-    setRepo(System.getenv("GITHUB_REPOSITORY") ?: "https://github.com/duro92/ExtCloud")
-    authors = listOf("duro92")
-        }
-
+        setRepo(System.getenv("GITHUB_REPOSITORY") ?: "https://github.com/HatsuneMikuUwU/AnimeX")
+        authors = listOf("Miku")
+    }
 
     android {
-        namespace = "com.excloud"
+        namespace = "com.miku"
+        compileSdk = 35
 
         defaultConfig {
             minSdk = 21
-            compileSdkVersion(36)
-            targetSdk = 36
-            
         }
 
         compileOptions {
-            sourceCompatibility = JavaVersion.VERSION_1_8
-            targetCompatibility = JavaVersion.VERSION_1_8
+            sourceCompatibility = JavaVersion.VERSION_17
+            targetCompatibility = JavaVersion.VERSION_17
         }
 
-
-        tasks.withType<KotlinJvmCompile> {
+        tasks.withType<KotlinJvmCompile>().configureEach {
             compilerOptions {
-                jvmTarget.set(JvmTarget.JVM_1_8)
+                jvmTarget.set(JvmTarget.JVM_17)
+
                 freeCompilerArgs.addAll(
                     "-Xno-call-assertions",
                     "-Xno-param-assertions",
@@ -82,31 +67,34 @@ subprojects {
     }
 
     dependencies {
-        val cloudstream by configurations
-        val implementation by configurations
+        add("cloudstream", "com.lagradost:cloudstream3:pre-release")
         
-        // Cloudstream dependencies
-        cloudstream("com.lagradost:cloudstream3:pre-release")
-
-        // Other dependencies
-        implementation(kotlin("stdlib")) // Untuk Kotlin Standard Library
-        implementation("com.github.Blatzar:NiceHttp:0.4.13") // Untuk HTTP requests
-        implementation("org.jsoup:jsoup:1.18.3") // Untuk parsing HTML
-        implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.16.0") // JANGAN DIGANTI ke versi terbaru, karena ada masalah dengan versi terbaru
-        implementation("com.fasterxml.jackson.core:jackson-databind:2.16.0") // Untuk serialisasi/deserialisasi JSON
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1") // Untuk coroutines di Android
-        implementation("com.faendir.rhino:rhino-android:1.6.0") // Untuk JavaScript engine
-        implementation("me.xdrop:fuzzywuzzy:1.4.0") // Untuk fuzzy matching
-        implementation("com.google.code.gson:gson:2.11.0") // Untuk serialisasi/deserialisasi JSON
-        implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3") // Untuk serialisasi/deserialisasi JSON
-        implementation("app.cash.quickjs:quickjs-android:0.9.2") // Untuk JavaScript engine
-        implementation("com.squareup.okhttp3:okhttp:4.12.0") // Untuk HTTP requests
-        implementation("androidx.core:core-ktx:1.16.0") // Untuk Log dan utilitas Android
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1") // Untuk coroutines
-
+        // Kotlin & Coroutines
+        add("implementation", kotlin("stdlib"))
+        add("implementation", "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
+        add("implementation", "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+        add("implementation", "org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+        
+        // Network & Scraping
+        add("implementation", "com.github.Blatzar:NiceHttp:0.4.18")
+        add("implementation", "com.squareup.okhttp3:okhttp:5.4.0")
+        add("implementation", "org.jsoup:jsoup:1.23.2")
+        
+        // JSON Parsing
+        add("implementation", "com.fasterxml.jackson.module:jackson-module-kotlin:2.22.1")
+        add("implementation", "com.fasterxml.jackson.core:jackson-databind:2.22.2")
+        add("implementation", "com.google.code.gson:gson:2.14.0")
+        
+        // JavaScript Evaluation
+        add("implementation", "com.faendir.rhino:rhino-android:1.6.0")
+        add("implementation", "app.cash.quickjs:quickjs-android:0.9.2")
+        
+        // Utils & Core
+        add("implementation", "me.xdrop:fuzzywuzzy:1.4.0")
+        add("implementation", "androidx.core:core-ktx:1.19.0")
     }
 }
 
-task<Delete>("clean") {
+tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
